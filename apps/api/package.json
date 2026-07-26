@@ -1,0 +1,38 @@
+{
+  "name": "api",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "bun --watch src/index.ts",
+    "start": "bun src/index.ts",
+    "check-types": "tsc --noEmit",
+    "clean": "rm -rf dist *.tsbuildinfo",
+    "db:push": "drizzle-kit push",
+    "db:generate": "drizzle-kit generate",
+    "db:studio": "drizzle-kit studio",
+    "db:migrate": "bun src/db/migrate.ts"
+  },
+  "devDependencies": {
+    "@repo/types": "workspace:*",
+    "@types/bun": "latest",
+    "@types/cors": "^2.8.19",
+    "@types/dotenv": "^8.2.3",
+    "@types/express": "^5.0.6",
+    "@types/nodemailer": "^8.0.1",
+    "drizzle-kit": "^0.31.10"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "better-auth": "^1.6.25",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "drizzle-orm": "^0.45.2",
+    "express": "^5.2.1",
+    "nodemailer": "^9.0.3",
+    "postgres": "^3.4.9",
+    "zod": "^4.4.3"
+  }
+}
