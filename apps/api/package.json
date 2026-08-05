@@ -5,6 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "bun --watch src/index.ts",
+    "build": "bun build ./src/index.ts --outdir ./dist --target bun",
     "start": "bun src/index.ts",
     "check-types": "tsc --noEmit",
     "clean": "rm -rf dist *.tsbuildinfo",

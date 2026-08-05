@@ -12,6 +12,9 @@ export const auth = betterAuth({
     schema,
   }),
   baseURL: process.env.BETTER_AUTH_URL || "http://localhost:5000",
+  user: {
+    modelName: "users",
+  },
   trustedOrigins,
   emailAndPassword: {
     enabled: true,

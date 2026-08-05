@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ReactQueryProvider } from "@/components/providers/react-query-provider";
 import { Toaster } from "@/components/ui/sonner";
+import { NavFooterWrapper } from "@/modules/landing/nav-footer-wrapper";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
+  variable: "--font-sans",
   subsets: ["latin"],
+  weight: ["400", "500", "600"],
 });
 
 const geistMono = Geist_Mono({
@@ -15,8 +17,16 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Queue Management System",
-  description: "A system for managing queues for businesses.",
+  title: {
+    default: "Queueup — Digital queue management for local businesses",
+    template: "%s · Queueup",
+  },
+  description:
+    "Let customers join your walk-in queue from anywhere. Shop owners manage the live line; customers track their spot and arrive when it's nearly their turn.",
+  icons: {
+    icon: [{ url: "/logo.svg", type: "image/svg+xml" }],
+    apple: [{ url: "/logo.svg", type: "image/svg+xml" }],
+  },
 };
 
 export default function RootLayout({
@@ -27,11 +37,11 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${inter.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
+      <body className="flex min-h-full flex-col bg-canvas text-ink">
         <ReactQueryProvider>
-          {children}
+          <NavFooterWrapper>{children}</NavFooterWrapper>
           <Toaster />
         </ReactQueryProvider>
       </body>
