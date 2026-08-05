@@ -3,10 +3,14 @@ import postgres from "postgres";
 import * as schema from "./schema";
 import dotenv from "dotenv";
 
-dotenv.config({ path: ".env.development" });
+const nodeEnv = process.env.NODE_ENV ?? "development";
+const envFile =
+  nodeEnv === "development" ? ".env.development" : `.env.${nodeEnv}`;
+
+dotenv.config({ path: envFile });
 
 if (!process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL is not provided in .env");
+  throw new Error(`DATABASE_URL is not provided in ${envFile}`);
 }
 
 const client = postgres(process.env.DATABASE_URL, { max: 10 });

@@ -14,7 +14,7 @@ CREATE TABLE "account" (
 	"scope" text,
 	"password" text,
 	"created_at" timestamp DEFAULT now() NOT NULL,
-	"updated_at" timestamp NOT NULL
+	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "session" (
@@ -22,7 +22,7 @@ CREATE TABLE "session" (
 	"expires_at" timestamp NOT NULL,
 	"token" text NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
-	"updated_at" timestamp NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL,
 	"ip_address" text,
 	"user_agent" text,
 	"user_id" text NOT NULL,
@@ -64,6 +64,7 @@ CREATE TABLE "shops" (
 	"area" text,
 	"lat" double precision,
 	"lng" double precision,
+	"timezone" text DEFAULT 'Asia/Kathmandu' NOT NULL,
 	"avg_service_minutes" integer DEFAULT 10 NOT NULL,
 	"queue_expiry_hours" integer DEFAULT 24 NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
@@ -111,6 +112,7 @@ ALTER TABLE "shops" ADD CONSTRAINT "shops_owner_id_users_id_fk" FOREIGN KEY ("ow
 ALTER TABLE "queues" ADD CONSTRAINT "queues_shop_id_shops_id_fk" FOREIGN KEY ("shop_id") REFERENCES "public"."shops"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "ticket_verifications" ADD CONSTRAINT "ticket_verifications_ticket_id_tickets_id_fk" FOREIGN KEY ("ticket_id") REFERENCES "public"."tickets"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "tickets" ADD CONSTRAINT "tickets_queue_id_queues_id_fk" FOREIGN KEY ("queue_id") REFERENCES "public"."queues"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "tickets" ADD CONSTRAINT "tickets_requeued_from_ticket_id_tickets_id_fk" FOREIGN KEY ("requeued_from_ticket_id") REFERENCES "public"."tickets"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "account_userId_idx" ON "account" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "session_userId_idx" ON "session" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "verification_identifier_idx" ON "verification" USING btree ("identifier");--> statement-breakpoint
@@ -121,5 +123,5 @@ CREATE INDEX "shops_owner_idx" ON "shops" USING btree ("owner_id");--> statement
 CREATE UNIQUE INDEX "queues_shop_date_idx" ON "queues" USING btree ("shop_id","date");--> statement-breakpoint
 CREATE UNIQUE INDEX "ticket_verifications_token_idx" ON "ticket_verifications" USING btree ("token");--> statement-breakpoint
 CREATE UNIQUE INDEX "tickets_queue_token_idx" ON "tickets" USING btree ("queue_id","token_number");--> statement-breakpoint
-CREATE INDEX "tickets_queue_email_status_idx" ON "tickets" USING btree ("queue_id","customer_email","status");--> statement-breakpoint
+CREATE UNIQUE INDEX "tickets_queue_email_active_idx" ON "tickets" USING btree ("queue_id","customer_email") WHERE "tickets"."status" IN ('pending_verification', 'waiting', 'serving');--> statement-breakpoint
 CREATE INDEX "tickets_queue_status_idx" ON "tickets" USING btree ("queue_id","status");

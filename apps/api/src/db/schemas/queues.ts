@@ -17,7 +17,8 @@ export const queues = pgTable(
       .notNull()
       .references(() => shops.id, { onDelete: "cascade" }),
 
-    date: date("date").notNull(), // the "day" this queue belongs to
+    // shop-local calendar day (from shops.timezone), not server/UTC midnight
+    date: date("date").notNull(),
     currentServingNumber: integer("current_serving_number")
       .notNull()
       .default(0),
