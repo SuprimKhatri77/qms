@@ -22,6 +22,15 @@ export function SignupForm() {
     useState<Partial<Record<keyof SignupFormValues, string>>>();
   const signup = useSignup();
 
+  function clearFieldError(field: keyof SignupFormValues) {
+    setErrors((prev) => {
+      if (!prev?.[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  }
+
   const form = useForm({
     defaultValues: {
       name: "",
@@ -60,6 +69,7 @@ export function SignupForm() {
           {(field) => {
             const fieldError = field.state.meta.errors[0]?.message;
             const mergedError = fieldError ?? errors?.name;
+            const errorId = "signup-name-error";
 
             return (
               <div className="space-y-2.5">
@@ -75,11 +85,18 @@ export function SignupForm() {
                   required
                   value={field.state.value}
                   onBlur={field.handleBlur}
-                  onChange={(event) => field.handleChange(event.target.value)}
+                  onChange={(event) => {
+                    clearFieldError("name");
+                    field.handleChange(event.target.value);
+                  }}
+                  aria-invalid={mergedError ? true : undefined}
+                  aria-describedby={mergedError ? errorId : undefined}
                   className="h-11 rounded-none border-hairline px-3.5 text-sm placeholder:text-ink-faint"
                 />
                 {mergedError ? (
-                  <p className="text-xs text-red-600">{mergedError}</p>
+                  <p id={errorId} role="alert" className="text-xs text-red-600">
+                    {mergedError}
+                  </p>
                 ) : null}
               </div>
             );
@@ -90,6 +107,7 @@ export function SignupForm() {
           {(field) => {
             const fieldError = field.state.meta.errors[0]?.message;
             const mergedError = fieldError ?? errors?.email;
+            const errorId = "signup-email-error";
 
             return (
               <div className="space-y-2.5">
@@ -105,11 +123,18 @@ export function SignupForm() {
                   required
                   value={field.state.value}
                   onBlur={field.handleBlur}
-                  onChange={(event) => field.handleChange(event.target.value)}
+                  onChange={(event) => {
+                    clearFieldError("email");
+                    field.handleChange(event.target.value);
+                  }}
+                  aria-invalid={mergedError ? true : undefined}
+                  aria-describedby={mergedError ? errorId : undefined}
                   className="h-11 rounded-none border-hairline px-3.5 text-sm placeholder:text-ink-faint"
                 />
                 {mergedError ? (
-                  <p className="text-xs text-red-600">{mergedError}</p>
+                  <p id={errorId} role="alert" className="text-xs text-red-600">
+                    {mergedError}
+                  </p>
                 ) : null}
               </div>
             );
@@ -120,6 +145,7 @@ export function SignupForm() {
           {(field) => {
             const fieldError = field.state.meta.errors[0]?.message;
             const mergedError = fieldError ?? errors?.password;
+            const errorId = "signup-password-error";
 
             return (
               <div className="space-y-2.5">
@@ -137,11 +163,18 @@ export function SignupForm() {
                   required
                   value={field.state.value}
                   onBlur={field.handleBlur}
-                  onChange={(event) => field.handleChange(event.target.value)}
+                  onChange={(event) => {
+                    clearFieldError("password");
+                    field.handleChange(event.target.value);
+                  }}
+                  aria-invalid={mergedError ? true : undefined}
+                  aria-describedby={mergedError ? errorId : undefined}
                   className="h-11 rounded-none border-hairline px-3.5 text-sm placeholder:text-ink-faint"
                 />
                 {mergedError ? (
-                  <p className="text-xs text-red-600">{mergedError}</p>
+                  <p id={errorId} role="alert" className="text-xs text-red-600">
+                    {mergedError}
+                  </p>
                 ) : null}
               </div>
             );
@@ -152,6 +185,7 @@ export function SignupForm() {
           {(field) => {
             const fieldError = field.state.meta.errors[0]?.message;
             const mergedError = fieldError ?? errors?.confirmPassword;
+            const errorId = "signup-confirm-password-error";
 
             return (
               <div className="space-y-2.5">
@@ -169,11 +203,18 @@ export function SignupForm() {
                   required
                   value={field.state.value}
                   onBlur={field.handleBlur}
-                  onChange={(event) => field.handleChange(event.target.value)}
+                  onChange={(event) => {
+                    clearFieldError("confirmPassword");
+                    field.handleChange(event.target.value);
+                  }}
+                  aria-invalid={mergedError ? true : undefined}
+                  aria-describedby={mergedError ? errorId : undefined}
                   className="h-11 rounded-none border-hairline px-3.5 text-sm placeholder:text-ink-faint"
                 />
                 {mergedError ? (
-                  <p className="text-xs text-red-600">{mergedError}</p>
+                  <p id={errorId} role="alert" className="text-xs text-red-600">
+                    {mergedError}
+                  </p>
                 ) : null}
               </div>
             );

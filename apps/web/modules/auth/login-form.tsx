@@ -18,6 +18,15 @@ export function LoginForm() {
     useState<Partial<Record<keyof LoginRequest, string>>>();
   const login = useLogin();
 
+  function clearFieldError(field: keyof LoginRequest) {
+    setErrors((prev) => {
+      if (!prev?.[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  }
+
   const form = useForm({
     defaultValues: {
       email: "",
@@ -52,6 +61,7 @@ export function LoginForm() {
         {(field) => {
           const fieldError = field.state.meta.errors[0]?.message;
           const mergedError = fieldError ?? errors?.email;
+          const errorId = "login-email-error";
 
           return (
             <div className="space-y-2">
@@ -65,11 +75,18 @@ export function LoginForm() {
                 required
                 value={field.state.value}
                 onBlur={field.handleBlur}
-                onChange={(event) => field.handleChange(event.target.value)}
+                onChange={(event) => {
+                  clearFieldError("email");
+                  field.handleChange(event.target.value);
+                }}
+                aria-invalid={mergedError ? true : undefined}
+                aria-describedby={mergedError ? errorId : undefined}
                 className="h-10 rounded-none border-hairline px-3 text-sm placeholder:text-ink-faint"
               />
               {mergedError ? (
-                <p className="text-xs text-red-600">{mergedError}</p>
+                <p id={errorId} role="alert" className="text-xs text-red-600">
+                  {mergedError}
+                </p>
               ) : null}
             </div>
           );
@@ -80,6 +97,7 @@ export function LoginForm() {
         {(field) => {
           const fieldError = field.state.meta.errors[0]?.message;
           const mergedError = fieldError ?? errors?.password;
+          const errorId = "login-password-error";
 
           return (
             <div className="space-y-2">
@@ -95,11 +113,18 @@ export function LoginForm() {
                 required
                 value={field.state.value}
                 onBlur={field.handleBlur}
-                onChange={(event) => field.handleChange(event.target.value)}
+                onChange={(event) => {
+                  clearFieldError("password");
+                  field.handleChange(event.target.value);
+                }}
+                aria-invalid={mergedError ? true : undefined}
+                aria-describedby={mergedError ? errorId : undefined}
                 className="h-10 rounded-none border-hairline px-3 text-sm placeholder:text-ink-faint"
               />
               {mergedError ? (
-                <p className="text-xs text-red-600">{mergedError}</p>
+                <p id={errorId} role="alert" className="text-xs text-red-600">
+                  {mergedError}
+                </p>
               ) : null}
             </div>
           );

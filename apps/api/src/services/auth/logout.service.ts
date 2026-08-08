@@ -28,10 +28,7 @@ export async function logout(headers: HeadersType): Promise<LogoutSuccess> {
       };
     }
 
-    return {
-      success: true,
-      message: "Logged out successfully",
-      cookies: [],
-    };
+    console.error("logout failed:", error);
+    throw error;
   }
 }

@@ -1,5 +1,11 @@
 import type { User } from "@repo/types";
 
+const ROLES = ["owner", "admin", "superadmin"] as const;
+
+function isUserRole(role: string): role is User["role"] {
+  return (ROLES as readonly string[]).includes(role);
+}
+
 export function toApiUser(user: {
   id: string;
   name: string;
@@ -9,11 +15,15 @@ export function toApiUser(user: {
   createdAt: Date | string;
   updatedAt: Date | string;
 }): User {
+  if (!user.role || !isUserRole(user.role)) {
+    throw new Error(`Invalid or missing user role: ${user.role}`);
+  }
+
   return {
     id: user.id,
     name: user.name,
     email: user.email,
-    role: (user.role ?? "owner") as User["role"],
+    role: user.role,
     imageUrl: user.image ?? undefined,
     createdAt:
       user.createdAt instanceof Date

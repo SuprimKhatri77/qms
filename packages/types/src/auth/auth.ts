@@ -33,8 +33,8 @@ export const signupSchema = authSchema.extend({
     .trim()
     .min(1, { error: "Name is required" })
     .max(50, { error: "Name must be at most 50 characters" })
-    .regex(/^[A-Za-z]+(?: [A-Za-z]+)*$/, {
-      error: "Name can only contain letters and spaces",
+    .regex(/^[\p{L}]+(?:[ '\-][\p{L}]+)*$/u, {
+      error: "Name can only contain letters, spaces, hyphens, and apostrophes",
     }),
 });
 

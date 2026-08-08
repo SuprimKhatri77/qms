@@ -2,6 +2,12 @@ import type { NextRequest } from "next/server";
 import type { MeResponse, User } from "@repo/types";
 import { getApiUrl } from "@/lib/api-url";
 
+/**
+ * Forwards the browser cookies from the Next request to the API.
+ * Works when the session cookie is visible on the web host (localhost, or
+ * COOKIE_DOMAIN shared across web/api subdomains). Separate sites without a
+ * shared Domain will not send the API session cookie to this proxy.
+ */
 export async function getSessionFromApi(
   req: NextRequest,
 ): Promise<User | null> {

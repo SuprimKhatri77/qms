@@ -15,7 +15,9 @@ export const useSignup = () => {
       toast.success(result.message);
     },
     onError: (error) => {
-      toast.error(error.response?.data.message);
+      toast.error(
+        error.response?.data.message || error.message || "Failed to signup",
+      );
     },
   });
 };
