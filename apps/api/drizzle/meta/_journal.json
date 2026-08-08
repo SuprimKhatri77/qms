@@ -8,6 +8,13 @@
       "when": 1785904523541,
       "tag": "0000_curious_magdalene",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1786166532076,
+      "tag": "0001_talented_luckman",
+      "breakpoints": true
     }
   ]
 }
