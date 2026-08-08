@@ -1,11 +1,38 @@
 import { betterAuth } from "better-auth";
 import { admin } from "better-auth/plugins";
+import { adminAc, defaultAc, userAc } from "better-auth/plugins/admin/access";
 import { db } from "@/db";
 import * as schema from "@/db/schema";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { sendMail } from "@/lib/emails/send-email";
 
-const trustedOrigins = ["http://localhost:5000", "http://localhost:3000"];
+const superadminAc = defaultAc.newRole({
+  user: [
+    "create",
+    "list",
+    "set-role",
+    "ban",
+    "impersonate",
+    "impersonate-admins",
+    "delete",
+    "set-password",
+    "set-email",
+    "get",
+    "update",
+  ],
+  session: ["list", "revoke", "delete"],
+});
+
+const cookieDomain = process.env.COOKIE_DOMAIN; // e.g. ".example.com" for app + api subdomains
+const isProd = process.env.NODE_ENV === "production";
+
+const trustedOrigins = [
+  "http://localhost:5000",
+  "http://localhost:3000",
+  process.env.BETTER_AUTH_URL,
+  process.env.FRONTEND_URL,
+].filter((origin): origin is string => Boolean(origin));
+
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: "pg",
@@ -47,14 +74,33 @@ export const auth = betterAuth({
   },
 
   advanced: {
+    ...(cookieDomain
+      ? {
+          crossSubDomainCookies: {
+            enabled: true,
+            domain: cookieDomain,
+          },
+        }
+      : {}),
     defaultCookieAttributes: {
       sameSite: "lax",
       httpOnly: true,
       path: "/",
+      ...(isProd ? { secure: true } : {}),
     },
   },
 
-  plugins: [admin()],
+  plugins: [
+    admin({
+      defaultRole: "owner",
+      adminRoles: ["admin", "superadmin"],
+      roles: {
+        owner: userAc,
+        admin: adminAc,
+        superadmin: superadminAc,
+      },
+    }),
+  ],
 });
 
 export type Session = Awaited<ReturnType<typeof auth.api.getSession>>;
