@@ -10,6 +10,13 @@
 
 **Solution:** Wherever there’s a queue, the owner gets a QR code for it. Customers scan, register remotely, and get notified when their turn is near — **email for now**, SMS later — so they can arrive closer to their slot. Less crowding, clearer queue management.
 
+## Features
+
+- **Shop owners** — sign up, set up a shop, open/close today's queue, call the next customer, mark a ticket done or no-show, and view analytics (wait times, no-show rate, daily/hourly load).
+- **Customers** — no account needed. Scan the shop's QR code, join with a name and email, and track their live position on a public status page.
+- **Turn-alert emails** — customers within striking distance of being called get an automatic email, sent the moment `call next` moves the queue forward.
+- **Superadmin panel** — a platform-wide view for admin/superadmin accounts: list every shop and suspend/reactivate one, cross-shop analytics, and a system log of things like failed emails or unexpected errors.
+
 ## Architecture
 
 Turborepo monorepo with Bun: Next.js frontend and Express API backed by PostgreSQL. Apps talk over HTTP; shared types live in a workspace package.
@@ -37,6 +44,7 @@ Turborepo monorepo with Bun: Next.js frontend and Express API backed by PostgreS
 
 - Auth: `/api/auth/*` (Better Auth — not version-prefixed)
 - App: `/api/v1/*` (e.g. `GET /api/v1/health`)
+- Admin: `/api/v1/admin/*` — gated to `admin`/`superadmin` roles (shops, platform analytics, system logs)
 
 ### Database
 
