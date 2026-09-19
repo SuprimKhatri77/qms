@@ -9,6 +9,9 @@ export const ErrorCode = {
   INVALID_ID_FORMAT: "INVALID_ID_FORMAT",
   INVALID_QUERY_PARAM: "INVALID_QUERY_PARAM",
   PAGE_NOT_FOUND: "PAGE_NOT_FOUND",
+  NOT_FOUND: "NOT_FOUND",
+  // The request is valid, but the current state doesn't allow it
+  CONFLICT: "CONFLICT",
   DUPLICATE_ENTRY: "DUPLICATE_ENTRY",
   INVALID_REQUEST_PARAMS: "INVALID_REQUEST_PARAMS",
 } as const;
