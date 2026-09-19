@@ -26,10 +26,15 @@ export const shops = pgTable(
     // location
     city: text("city").notNull(),
     area: text("area"),
+    address: text("address"),
     lat: doublePrecision("lat"),
     lng: doublePrecision("lng"),
     // IANA timezone used to derive queues.date (shop-local business day)
     timezone: text("timezone").notNull().default("Asia/Kathmandu"),
+
+    // contact info, shown on the shop's public page and (later) landing-page map pins
+    email: text("email"),
+    phone: text("phone"),
 
     // queue behavior config, owner-controlled
     avgServiceMinutes: integer("avg_service_minutes").notNull().default(10),
