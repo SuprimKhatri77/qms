@@ -19,17 +19,8 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { getInitials } from "@/lib/utils";
 import { useLogout } from "@/modules/auth/hooks/mutations/useLogout";
-
-// "Ram Bahadur" -> "RB"
-function getInitials(name: string) {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("");
-}
 
 export function NavUser({ user }: { user: User }) {
   const { isMobile } = useSidebar();
