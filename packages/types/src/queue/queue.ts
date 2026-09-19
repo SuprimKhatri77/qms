@@ -22,6 +22,7 @@ export type QueueTicket = {
   status: TicketStatus;
   createdAt: string;
   calledAt: string | null;
+  resolvedAt: string | null;
 };
 
 export type ShopQueue = {

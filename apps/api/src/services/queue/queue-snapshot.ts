@@ -7,7 +7,7 @@ import type {
   QueueTicket,
 } from "@repo/types";
 
-function toQueueTicket(row: typeof tickets.$inferSelect): QueueTicket {
+export function toQueueTicket(row: typeof tickets.$inferSelect): QueueTicket {
   return {
     id: row.id,
     tokenNumber: row.tokenNumber,
@@ -16,6 +16,7 @@ function toQueueTicket(row: typeof tickets.$inferSelect): QueueTicket {
     status: row.status,
     createdAt: row.createdAt.toISOString(),
     calledAt: row.calledAt ? row.calledAt.toISOString() : null,
+    resolvedAt: row.resolvedAt ? row.resolvedAt.toISOString() : null,
   };
 }
 

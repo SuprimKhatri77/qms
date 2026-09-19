@@ -10,3 +10,10 @@ export function getShopLocalDate(timezone: string, now = new Date()): string {
     day: "2-digit",
   }).format(now);
 }
+
+// Moves a "YYYY-MM-DD" date forward or backward by whole days.
+export function addDays(date: string, days: number): string {
+  const moved = new Date(`${date}T00:00:00Z`);
+  moved.setUTCDate(moved.getUTCDate() + days);
+  return moved.toISOString().slice(0, 10);
+}
