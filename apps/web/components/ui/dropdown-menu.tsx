@@ -5,8 +5,17 @@ import { Menu as MenuPrimitive } from "@base-ui/react/menu";
 import { cn } from "@/lib/utils";
 import { ChevronRightIcon, CheckIcon } from "lucide-react";
 
-function DropdownMenu({ ...props }: MenuPrimitive.Root.Props) {
-  return <MenuPrimitive.Root data-slot="dropdown-menu" {...props} />;
+function DropdownMenu({ modal = false, ...props }: MenuPrimitive.Root.Props) {
+  // The library default (true) locks page scroll while open. On a browser
+  // with classic (space-reserving) scrollbars, Base UI does this by rewriting
+  // <body>'s position/height/scrollTop with inline styles -- which changes
+  // the scrolling context a `position: sticky` ancestor (our navbar) measures
+  // itself against, making it jump or vanish for as long as the menu is open.
+  // None of our dropdowns are true modal dialogs, so they don't need page
+  // scroll locked or the rest of the page blocked from pointer input anyway.
+  return (
+    <MenuPrimitive.Root data-slot="dropdown-menu" modal={modal} {...props} />
+  );
 }
 
 function DropdownMenuPortal({ ...props }: MenuPrimitive.Portal.Props) {

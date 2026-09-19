@@ -113,12 +113,6 @@
   }
   html {
     @apply font-sans;
-    /* Any dropdown/dialog that locks page scroll while open (Base UI's menus
-       do this by default) removes the scrollbar, which otherwise shifts the
-       whole page a few pixels sideways for the instant it's open — visible as
-       a flicker, and can even make an anchored menu re-close itself. Reserving
-       the gutter always means that toggle never changes the page's width. */
-    scrollbar-gutter: stable;
   }
 }
 
