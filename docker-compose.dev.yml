@@ -37,6 +37,8 @@ services:
     container_name: qms-web
     environment:
       - PORT=3000
+      # Server-side calls to the API go over the Docker network, not localhost
+      - API_INTERNAL_URL=http://api:5000
     ports:
       - "3000:3000"
     env_file:
