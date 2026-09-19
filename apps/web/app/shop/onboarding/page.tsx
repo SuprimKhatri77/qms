@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { OnboardingPage, getMyShopFromApi } from "@/modules/shop";
+import { OnboardingPage } from "@/modules/shop";
+import { getMyShopFromApi } from "@/modules/shop/api/get-my-shop.server";
 
 export const metadata: Metadata = {
   title: "Set up your shop",
