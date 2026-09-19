@@ -45,13 +45,15 @@ export function NavUser({ user }: { user: User }) {
             <Avatar className="size-8">
               <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
             </Avatar>
-            <div className="grid flex-1 text-left text-sm leading-tight">
+            {/* Hidden (not just clipped) when the sidebar collapses to
+                icon-only, same reasoning as the shop name in app-sidebar. */}
+            <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
               <span className="truncate font-medium">{user.name}</span>
               <span className="truncate text-xs text-ink-mute">
                 {user.email}
               </span>
             </div>
-            <ChevronsUpDown className="ml-auto size-4" />
+            <ChevronsUpDown className="ml-auto size-4 group-data-[collapsible=icon]:hidden" />
           </DropdownMenuTrigger>
 
           <DropdownMenuContent

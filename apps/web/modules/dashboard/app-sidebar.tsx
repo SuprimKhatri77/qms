@@ -37,7 +37,10 @@ export function AppSidebar({ user }: { user: User }) {
               render={<Link href="/shop" />}
             >
               <LogoMark className="h-6 shrink-0" />
-              <div className="grid flex-1 text-left text-sm leading-tight">
+              {/* Hidden rather than just clipped when collapsed to icon-only:
+                  otherwise the text overflows the icon-width button instead of
+                  disappearing behind it. */}
+              <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
                 <span className="truncate font-medium">{shop.name}</span>
                 <span className="truncate text-xs text-ink-mute">
                   {SHOP_CATEGORY_LABELS[shop.category]}
