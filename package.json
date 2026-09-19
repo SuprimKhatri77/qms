@@ -7,6 +7,7 @@
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "check-types": "turbo run check-types",
+    "test": "turbo run test",
     "docs:generate": "turbo run docs:generate --filter=api",
     "docker:dev:up": "docker compose --env-file .env.local -f docker-compose.dev.yml up --build",
     "docker:dev:down": "docker compose --env-file .env.local -f docker-compose.dev.yml down",

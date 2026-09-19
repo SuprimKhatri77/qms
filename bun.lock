@@ -76,6 +76,7 @@
         "@repo/typescript-config": "workspace:*",
         "@tailwindcss/postcss": "^4",
         "@tanstack/eslint-plugin-query": "^5.101.4",
+        "@types/bun": "^1.4.2",
         "@types/leaflet": "^1.9.22",
         "@types/node": "^20",
         "@types/react": "^19",
