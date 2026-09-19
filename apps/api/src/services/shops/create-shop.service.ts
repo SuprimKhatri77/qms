@@ -51,6 +51,11 @@ export async function createShop(
           category: data.category,
           city: data.city,
           area: data.area ?? null,
+          address: data.address ?? null,
+          email: data.email ?? null,
+          phone: data.phone ?? null,
+          lat: data.lat ?? null,
+          lng: data.lng ?? null,
           avgServiceMinutes: data.avgServiceMinutes,
           queueExpiryHours: data.queueExpiryHours,
         })
