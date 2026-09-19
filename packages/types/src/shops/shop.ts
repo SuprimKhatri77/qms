@@ -120,11 +120,19 @@ export type UpdateShopRequest = z.infer<typeof updateShopSchema>;
 // <input> elements, so they are kept as numbers in the form state too.
 export type CreateShopFormValues = z.input<typeof createShopSchema>;
 
+export const SHOP_STATUSES = ["active", "suspended"] as const;
+export type ShopStatus = (typeof SHOP_STATUSES)[number];
+export const SHOP_STATUS_LABELS: Record<ShopStatus, string> = {
+  active: "Active",
+  suspended: "Suspended",
+};
+
 export type Shop = {
   id: string;
   name: string;
   slug: string;
   category: ShopCategory;
+  status: ShopStatus;
   city: string;
   area: string | null;
   address: string | null;

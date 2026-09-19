@@ -11,6 +11,7 @@ import { ErrorCode } from "@repo/types";
 import { getShopBySlug } from "@/services/shops/get-shop-by-slug";
 import { findOrCreateTodaysQueue } from "@/services/queue/find-or-create-queue";
 import { sendMail } from "@/lib/emails/send-email";
+import { logEvent } from "@/lib/system-logs/log-event";
 
 // A verification link is only good for this long. Matches the window Better
 // Auth already uses for its own email links (resetPasswordTokenExpiresIn).
@@ -33,6 +34,16 @@ export async function joinQueue(
         success: false,
         message: "Shop not found",
         code: ErrorCode.NOT_FOUND,
+      };
+    }
+
+    // Set by an admin, never by the owner. Checked before the queue is even
+    // looked up, so a suspended shop's link can never create a ticket.
+    if (shop.status === "suspended") {
+      return {
+        success: false,
+        message: "This shop isn't accepting customers right now",
+        code: ErrorCode.CONFLICT,
       };
     }
 
@@ -123,6 +134,17 @@ export async function joinQueue(
       html: `<p>Confirm your spot in line at <strong>${shop.name}</strong>:</p><p><a href="${verifyUrl}">${verifyUrl}</a></p><p>This link expires in 15 minutes.</p>`,
     }).catch((error) => {
       console.error("joinQueue: failed to send verification email:", error);
+      logEvent(
+        "error",
+        "join-queue-email",
+        "Failed to send verification email",
+        {
+          shopId: shop.id,
+          ticketId: outcome.ticketId,
+          email: data.email,
+          error: String(error),
+        },
+      );
     });
 
     return {
@@ -132,6 +154,11 @@ export async function joinQueue(
     };
   } catch (error) {
     console.error("joinQueue failed:", error);
+    logEvent("error", "join-queue", "joinQueue threw an unexpected error", {
+      slug,
+      email: data.email,
+      error: String(error),
+    });
     return {
       success: false,
       message: "Failed to join the queue",

@@ -4,6 +4,7 @@ import { queues, tickets } from "@/db/schema";
 import type { ApiErrorResponse, QueueSnapshotResponse } from "@repo/types";
 import { ErrorCode } from "@repo/types";
 import { getOwnerShop } from "@/services/shops/get-owner-shop";
+import { logEvent } from "@/lib/system-logs/log-event";
 import { findOrCreateTodaysQueue } from "./find-or-create-queue";
 import { getQueueSnapshotResponse } from "./queue-snapshot";
 
@@ -68,6 +69,12 @@ export async function resolveTicket(
     );
   } catch (error) {
     console.error("resolveTicket failed:", error);
+    logEvent(
+      "error",
+      "resolve-ticket",
+      "resolveTicket threw an unexpected error",
+      { ticketId, outcome, error: String(error) },
+    );
     return {
       success: false,
       message: "Failed to update ticket",

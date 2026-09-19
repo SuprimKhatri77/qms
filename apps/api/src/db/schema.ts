@@ -3,3 +3,4 @@ export * from "./schemas/enums";
 export * from "./schemas/shops";
 export * from "./schemas/queues";
 export * from "./schemas/tickets";
+export * from "./schemas/system-logs";

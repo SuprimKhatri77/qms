@@ -9,7 +9,7 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { users } from "./auth";
-import { shopCategoryEnum } from "./enums";
+import { shopCategoryEnum, shopStatusEnum } from "./enums";
 
 export const shops = pgTable(
   "shops",
@@ -22,6 +22,9 @@ export const shops = pgTable(
     name: text("name").notNull(),
     slug: text("slug").notNull(),
     category: shopCategoryEnum("category").notNull().default("other"),
+    // Set by an admin, not the owner. A suspended shop's public join page
+    // stops accepting new tickets; everything else about it is untouched.
+    status: shopStatusEnum("status").notNull().default("active"),
 
     // location
     city: text("city").notNull(),

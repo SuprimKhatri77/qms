@@ -1,4 +1,5 @@
 import { sendMail } from "@/lib/emails/send-email";
+import { logEvent } from "@/lib/system-logs/log-event";
 
 type TurnAlertRecipient = {
   customerName: string;
@@ -27,5 +28,9 @@ export function sendTurnAlertEmail(
     html: `<p>Hi ${recipient.customerName}, you're <strong>${howFar}</strong> in line at ${shopName}.</p><p><a href="${ticketUrl}">${ticketUrl}</a></p>`,
   }).catch((error) => {
     console.error("sendTurnAlertEmail failed:", error);
+    logEvent("error", "turn-alert-email", "Failed to send turn-alert email", {
+      customerEmail: recipient.customerEmail,
+      error: String(error),
+    });
   });
 }

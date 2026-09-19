@@ -21,7 +21,13 @@ export function JoinPage({ shop }: { shop: Shop }) {
         </div>
 
         <div className="rounded-none border border-hairline bg-canvas p-8 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
-          <JoinForm slug={shop.slug} />
+          {shop.status === "suspended" ? (
+            <p className="text-center text-sm text-ink-mute">
+              This shop isn&apos;t accepting customers right now.
+            </p>
+          ) : (
+            <JoinForm slug={shop.slug} />
+          )}
         </div>
       </div>
     </div>
