@@ -3,8 +3,22 @@
 import Link from "next/link";
 import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Menu, X } from "lucide-react";
+import { LayoutDashboard, LogOut, Menu, X } from "lucide-react";
+import type { User } from "@repo/types";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { getInitials } from "@/lib/utils";
+import { getHomePath } from "@/lib/home-path";
+import { useLogout } from "@/modules/auth/hooks/mutations/useLogout";
 import { Logo } from "./logo";
 
 const navLinks = [
@@ -13,8 +27,59 @@ const navLinks = [
   { href: "/#faq", label: "FAQ" },
 ];
 
-export function Navbar() {
+type LogoutMutation = ReturnType<typeof useLogout>;
+
+// The dropdown behind the avatar, shown on desktop. `logout` is passed in
+// (rather than each caller calling useLogout itself) so the desktop dropdown
+// and the mobile menu's sign-out button share one mutation.
+function UserMenu({ user, logout }: { user: User; logout: LogoutMutation }) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <button
+            type="button"
+            aria-label="Account menu"
+            className="rounded-full outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+          />
+        }
+      >
+        <Avatar className="size-9">
+          <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
+        </Avatar>
+      </DropdownMenuTrigger>
+
+      <DropdownMenuContent align="end" className="min-w-56">
+        <DropdownMenuGroup>
+          <DropdownMenuLabel className="font-normal">
+            <span className="block truncate text-sm font-medium text-ink">
+              {user.name}
+            </span>
+            <span className="block truncate text-xs text-ink-mute">
+              {user.email}
+            </span>
+          </DropdownMenuLabel>
+        </DropdownMenuGroup>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem render={<Link href={getHomePath(user.role)} />}>
+          <LayoutDashboard />
+          Dashboard
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          disabled={logout.isPending}
+          onClick={() => logout.mutate()}
+        >
+          <LogOut />
+          Sign out
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+export function Navbar({ initialUser }: { initialUser: User | null }) {
   const [open, setOpen] = useState(false);
+  const logout = useLogout();
 
   return (
     <header className="sticky top-0 z-50 border-b border-hairline bg-canvas/95 backdrop-blur-sm">
@@ -34,16 +99,25 @@ export function Navbar() {
         </nav>
 
         <div className="hidden items-center gap-3 md:flex">
-          <Button
-            variant="link"
-            nativeButton={false}
-            render={<Link href="/auth/login" />}
-          >
-            Sign in
-          </Button>
-          <Button nativeButton={false} render={<Link href="/auth/signup" />}>
-            Get started
-          </Button>
+          {initialUser ? (
+            <UserMenu user={initialUser} logout={logout} />
+          ) : (
+            <>
+              <Button
+                variant="link"
+                nativeButton={false}
+                render={<Link href="/auth/login" />}
+              >
+                Sign in
+              </Button>
+              <Button
+                nativeButton={false}
+                render={<Link href="/auth/signup" />}
+              >
+                Get started
+              </Button>
+            </>
+          )}
         </div>
 
         <button
@@ -119,21 +193,47 @@ export function Navbar() {
                 transition={{ duration: 0.22, ease: "easeOut" }}
                 className="mt-2 flex flex-col gap-2 border-t border-hairline pt-4"
               >
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  nativeButton={false}
-                  render={<Link href="/auth/login" />}
-                >
-                  Sign in
-                </Button>
-                <Button
-                  className="w-full"
-                  nativeButton={false}
-                  render={<Link href="/auth/signup" />}
-                >
-                  Get started
-                </Button>
+                {initialUser ? (
+                  <>
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      nativeButton={false}
+                      render={<Link href={getHomePath(initialUser.role)} />}
+                      onClick={() => setOpen(false)}
+                    >
+                      Dashboard
+                    </Button>
+                    <Button
+                      className="w-full"
+                      disabled={logout.isPending}
+                      onClick={() => {
+                        setOpen(false);
+                        logout.mutate();
+                      }}
+                    >
+                      Sign out
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      nativeButton={false}
+                      render={<Link href="/auth/login" />}
+                    >
+                      Sign in
+                    </Button>
+                    <Button
+                      className="w-full"
+                      nativeButton={false}
+                      render={<Link href="/auth/signup" />}
+                    >
+                      Get started
+                    </Button>
+                  </>
+                )}
               </motion.div>
             </motion.nav>
           </motion.div>

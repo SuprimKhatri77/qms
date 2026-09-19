@@ -4,6 +4,7 @@ import "./globals.css";
 import { ReactQueryProvider } from "@/components/providers/react-query-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { NavFooterWrapper } from "@/modules/landing/nav-footer-wrapper";
+import { getOptionalCurrentUserFromApi } from "@/modules/auth/api/get-current-user.server";
 
 const inter = Inter({
   variable: "--font-sans",
@@ -29,11 +30,17 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Fetched here (not inside NavFooterWrapper) because it's a client component
+  // and reading cookies requires a server component. The dashboard layout asks
+  // the same endpoint for its own sidebar user, but Next dedupes identical
+  // fetch calls within one render, so this doesn't cost an extra request there.
+  const initialUser = await getOptionalCurrentUserFromApi();
+
   return (
     <html
       lang="en"
@@ -42,7 +49,9 @@ export default function RootLayout({
     >
       <body className="flex min-h-full flex-col bg-canvas text-ink">
         <ReactQueryProvider>
-          <NavFooterWrapper>{children}</NavFooterWrapper>
+          <NavFooterWrapper initialUser={initialUser}>
+            {children}
+          </NavFooterWrapper>
           <Toaster />
         </ReactQueryProvider>
       </body>
