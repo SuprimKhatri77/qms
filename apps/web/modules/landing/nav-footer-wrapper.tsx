@@ -21,8 +21,13 @@ export function NavFooterWrapper({
   const isDashboard =
     pathname === "/shop" ||
     (pathname.startsWith("/shop/") && !pathname.startsWith("/shop/onboarding"));
+  // The customer-facing join/verify/ticket flow ("/s/<slug>/...") is its own
+  // focused, single-purpose flow — the marketing nav's Sign in/Get started
+  // (or an owner's Dashboard/Sign out) has nothing to do with a customer
+  // standing in line and would only be confusing here.
+  const isCustomerFlow = pathname.startsWith("/s/");
 
-  if (isAdmin || isDashboard) {
+  if (isAdmin || isDashboard || isCustomerFlow) {
     return children;
   }
 
