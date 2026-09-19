@@ -1,10 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
-import {
-  ErrorCode,
-  type ApiErrorResponse,
-  type ValidationError,
-} from "@repo/types";
+import { ErrorCode, type ApiErrorResponse } from "@repo/types";
 import { z } from "zod";
+import { toValidationErrors } from "@/lib/validation";
 
 export const validate =
   <Schema extends z.ZodTypeAny>(schema: Schema) =>
@@ -16,11 +13,7 @@ export const validate =
     const result = schema.safeParse(req.body);
 
     if (!result.success) {
-      const errors: ValidationError[] = result.error.issues.map((issue) => ({
-        field: issue.path.join(".") || "root",
-        message: issue.message,
-        code: issue.code,
-      }));
+      const errors = toValidationErrors(result.error);
 
       return res.status(400).json({
         success: false,

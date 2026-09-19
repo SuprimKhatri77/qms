@@ -65,6 +65,13 @@ export const createShopSchema = z.object({
 
 export type CreateShopRequest = z.infer<typeof createShopSchema>;
 
+// The settings page edits the same fields onboarding collects, and sends all of
+// them every time (a full replace). The slug is never changed: the shop's public
+// link may already be printed on a QR code.
+export const updateShopSchema = createShopSchema;
+
+export type UpdateShopRequest = z.infer<typeof updateShopSchema>;
+
 // What the onboarding form holds while the owner is typing. Numbers come from
 // <input> elements, so they are kept as numbers in the form state too.
 export type CreateShopFormValues = z.input<typeof createShopSchema>;
@@ -84,6 +91,8 @@ export type Shop = {
 };
 
 export type CreateShopResponse = ApiSuccessResponse<{ shop: Shop }>;
+
+export type UpdateShopResponse = ApiSuccessResponse<{ shop: Shop }>;
 
 // `shop` is null while the owner hasn't finished onboarding yet.
 export type GetMyShopResponse = ApiSuccessResponse<{ shop: Shop | null }>;

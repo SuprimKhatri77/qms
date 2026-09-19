@@ -11,8 +11,13 @@ type NavFooterWrapperProps = {
 export function NavFooterWrapper({ children }: NavFooterWrapperProps) {
   const pathname = usePathname();
   const isAdmin = pathname === "/admin" || pathname.startsWith("/admin/");
+  // The owner dashboard has its own sidebar layout. Onboarding is the one
+  // /shop page that keeps the marketing navbar and footer.
+  const isDashboard =
+    pathname === "/shop" ||
+    (pathname.startsWith("/shop/") && !pathname.startsWith("/shop/onboarding"));
 
-  if (isAdmin) {
+  if (isAdmin || isDashboard) {
     return children;
   }
 

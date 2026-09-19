@@ -2,6 +2,7 @@ import api from "@/lib/axios";
 import {
   LoginRequest,
   LoginResponse,
+  LogoutResponse,
   SignupRequest,
   SignupResponse,
 } from "@repo/types";
@@ -13,5 +14,10 @@ export const login = async (data: LoginRequest): Promise<LoginResponse> => {
 
 export const signup = async (data: SignupRequest): Promise<SignupResponse> => {
   const res = await api.post<SignupResponse>("/auth/signup", data);
+  return res.data;
+};
+
+export const logout = async (): Promise<LogoutResponse> => {
+  const res = await api.post<LogoutResponse>("/auth/logout");
   return res.data;
 };

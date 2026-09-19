@@ -1,0 +1,91 @@
+"use client";
+
+import Link from "next/link";
+import { ChevronsUpDown, LogOut, Settings } from "lucide-react";
+import type { User } from "@repo/types";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  useSidebar,
+} from "@/components/ui/sidebar";
+import { useLogout } from "@/modules/auth/hooks/mutations/useLogout";
+
+// "Ram Bahadur" -> "RB"
+function getInitials(name: string) {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("");
+}
+
+export function NavUser({ user }: { user: User }) {
+  const { isMobile } = useSidebar();
+  const logout = useLogout();
+
+  return (
+    <SidebarMenu>
+      <SidebarMenuItem>
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={<SidebarMenuButton size="lg" tooltip={user.name} />}
+          >
+            <Avatar className="size-8">
+              <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
+            </Avatar>
+            {/* Hidden (not just clipped) when the sidebar collapses to
+                icon-only, same reasoning as the shop name in app-sidebar. */}
+            <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
+              <span className="truncate font-medium">{user.name}</span>
+              <span className="truncate text-xs text-ink-mute">
+                {user.email}
+              </span>
+            </div>
+            <ChevronsUpDown className="ml-auto size-4 group-data-[collapsible=icon]:hidden" />
+          </DropdownMenuTrigger>
+
+          <DropdownMenuContent
+            side={isMobile ? "bottom" : "right"}
+            align="end"
+            className="min-w-56"
+          >
+            <DropdownMenuGroup>
+              <DropdownMenuLabel className="font-normal">
+                <span className="block truncate text-sm font-medium text-ink">
+                  {user.name}
+                </span>
+                <span className="block truncate text-xs text-ink-mute">
+                  {user.email}
+                </span>
+              </DropdownMenuLabel>
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem render={<Link href="/shop/settings" />}>
+              <Settings />
+              Settings
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              disabled={logout.isPending}
+              onClick={() => logout.mutate()}
+            >
+              <LogOut />
+              Sign out
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </SidebarMenuItem>
+    </SidebarMenu>
+  );
+}

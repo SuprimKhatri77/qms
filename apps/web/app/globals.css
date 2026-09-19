@@ -96,7 +96,9 @@
   --sidebar-foreground: #171717;
   --sidebar-primary: #3ecf8e;
   --sidebar-primary-foreground: #171717;
-  --sidebar-accent: #fafafa;
+  /* One step darker than --sidebar (#fafafa), so hovering/active a link is
+     actually visible against the sidebar's own background. */
+  --sidebar-accent: #ececec;
   --sidebar-accent-foreground: #171717;
   --sidebar-border: #dfdfdf;
   --sidebar-ring: #3ecf8e;
@@ -123,4 +125,3 @@
     transform: translateY(-8px);
   }
 }
-
