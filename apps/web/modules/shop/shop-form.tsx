@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useForm } from "@tanstack/react-form-nextjs";
 import {
   CreateShopFormValues,
@@ -12,6 +13,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
+
+// Leaflet touches `window` as soon as its module runs, which crashes a server
+// render. Loading it only on the client sidesteps that entirely.
+const LocationPicker = dynamic(
+  () => import("./location-picker").then((mod) => mod.LocationPicker),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-[280px] items-center justify-center border border-hairline text-sm text-ink-mute">
+        Loading map...
+      </div>
+    ),
+  },
+);
 
 const inputClassName =
   "h-10 rounded-none border-hairline px-3 text-sm placeholder:text-ink-faint";
@@ -54,6 +69,9 @@ export const EMPTY_SHOP_VALUES: CreateShopFormValues = {
   category: "" as ShopCategory,
   city: "",
   area: "",
+  address: "",
+  email: "",
+  phone: "",
   avgServiceMinutes: 10,
   queueExpiryHours: 24,
 };
@@ -193,6 +211,117 @@ export function ShopForm({
           }}
         </form.Field>
       </div>
+
+      <form.Field name="address">
+        {(field) => {
+          const error = field.state.meta.errors[0]?.message;
+          return (
+            <FieldShell
+              id="shop-address"
+              label="Street address (optional)"
+              error={error}
+            >
+              <Input
+                id="shop-address"
+                name="address"
+                placeholder="Putalisadak Road, near Civil Mall"
+                autoComplete="street-address"
+                value={field.state.value ?? ""}
+                onBlur={field.handleBlur}
+                onChange={(event) => field.handleChange(event.target.value)}
+                aria-invalid={error ? true : undefined}
+                aria-describedby={error ? "shop-address-error" : undefined}
+                className={inputClassName}
+              />
+            </FieldShell>
+          );
+        }}
+      </form.Field>
+
+      <div className="grid gap-5 sm:grid-cols-2">
+        <form.Field name="email">
+          {(field) => {
+            const error = field.state.meta.errors[0]?.message;
+            return (
+              <FieldShell
+                id="shop-email"
+                label="Contact email (optional)"
+                error={error}
+              >
+                <Input
+                  id="shop-email"
+                  name="email"
+                  type="email"
+                  placeholder="shop@example.com"
+                  autoComplete="email"
+                  value={field.state.value ?? ""}
+                  onBlur={field.handleBlur}
+                  onChange={(event) => field.handleChange(event.target.value)}
+                  aria-invalid={error ? true : undefined}
+                  aria-describedby={error ? "shop-email-error" : undefined}
+                  className={inputClassName}
+                />
+              </FieldShell>
+            );
+          }}
+        </form.Field>
+
+        <form.Field name="phone">
+          {(field) => {
+            const error = field.state.meta.errors[0]?.message;
+            return (
+              <FieldShell
+                id="shop-phone"
+                label="Contact phone (optional)"
+                error={error}
+              >
+                <Input
+                  id="shop-phone"
+                  name="phone"
+                  type="tel"
+                  placeholder="98XXXXXXXX"
+                  autoComplete="tel"
+                  value={field.state.value ?? ""}
+                  onBlur={field.handleBlur}
+                  onChange={(event) => field.handleChange(event.target.value)}
+                  aria-invalid={error ? true : undefined}
+                  aria-describedby={error ? "shop-phone-error" : undefined}
+                  className={inputClassName}
+                />
+              </FieldShell>
+            );
+          }}
+        </form.Field>
+      </div>
+
+      <form.Field name="lat">
+        {(field) => {
+          const error = field.state.meta.errors[0]?.message;
+          return (
+            <FieldShell
+              id="shop-location"
+              label="Location on map (optional)"
+              error={error}
+              hint="Click the map to drop a pin. Shown later on the landing page's shop map."
+            >
+              {/* lng lives on its own field; reading it here keeps the picker
+                  in sync without re-rendering the whole form on every click. */}
+              <form.Subscribe selector={(state) => state.values.lng}>
+                {(lng) => (
+                  <LocationPicker
+                    lat={field.state.value}
+                    lng={lng}
+                    onSelect={(lat, lng) => {
+                      field.handleChange(lat);
+                      form.setFieldValue("lng", lng);
+                    }}
+                  />
+                )}
+              </form.Subscribe>
+            </FieldShell>
+          );
+        }}
+      </form.Field>
 
       <div className="grid gap-5 sm:grid-cols-2">
         <form.Field name="avgServiceMinutes">

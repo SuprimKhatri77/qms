@@ -21,6 +21,11 @@ export function SettingsPage() {
     category: shop.category,
     city: shop.city,
     area: shop.area ?? "",
+    address: shop.address ?? "",
+    email: shop.email ?? "",
+    phone: shop.phone ?? "",
+    lat: shop.lat ?? undefined,
+    lng: shop.lng ?? undefined,
     avgServiceMinutes: shop.avgServiceMinutes,
     queueExpiryHours: shop.queueExpiryHours,
   };
