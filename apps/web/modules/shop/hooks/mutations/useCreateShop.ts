@@ -1,28 +1,33 @@
+import {
+  ApiErrorResponse,
+  CreateShopRequest,
+  CreateShopResponse,
+} from "@repo/types";
 import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { ApiErrorResponse, SignupRequest, SignupResponse } from "@repo/types";
 import { AxiosError } from "axios";
-import { signup } from "../../api/auth";
 import { toast } from "sonner";
-import { getHomePath } from "@/lib/home-path";
+import { createShop } from "../../api/shop";
 
-export const useSignup = () => {
+export const useCreateShop = () => {
   const router = useRouter();
 
   return useMutation<
-    SignupResponse,
+    CreateShopResponse,
     AxiosError<ApiErrorResponse>,
-    SignupRequest
+    CreateShopRequest
   >({
-    mutationFn: signup,
+    mutationFn: createShop,
     onSuccess: (result) => {
       toast.success(result.message);
-      router.push(getHomePath(result.data.user.role));
+      router.push("/shop");
       router.refresh();
     },
     onError: (error) => {
       toast.error(
-        error.response?.data.message || error.message || "Failed to signup",
+        error.response?.data.message ||
+          error.message ||
+          "Failed to create shop",
       );
     },
   });
