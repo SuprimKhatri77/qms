@@ -22,12 +22,19 @@ function DropdownMenuContent({
   alignOffset = 0,
   side = "bottom",
   sideOffset = 4,
+  // "absolute" (the library default) places the popup using document
+  // coordinates, which drift away from an anchor that sits in a `position:
+  // sticky` or `fixed` container (e.g. a sticky navbar) as soon as the page
+  // scrolls after opening — Base UI then reads that drift as "anchor hidden"
+  // and closes the menu. "fixed" anchors to the viewport instead, which is
+  // what every trigger in this app actually sits in.
+  positionMethod = "fixed",
   className,
   ...props
 }: MenuPrimitive.Popup.Props &
   Pick<
     MenuPrimitive.Positioner.Props,
-    "align" | "alignOffset" | "side" | "sideOffset"
+    "align" | "alignOffset" | "side" | "sideOffset" | "positionMethod"
   >) {
   return (
     <MenuPrimitive.Portal>
@@ -37,6 +44,7 @@ function DropdownMenuContent({
         alignOffset={alignOffset}
         side={side}
         sideOffset={sideOffset}
+        positionMethod={positionMethod}
       >
         <MenuPrimitive.Popup
           data-slot="dropdown-menu-content"
