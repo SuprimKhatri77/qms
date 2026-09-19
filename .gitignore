@@ -37,5 +37,6 @@ yarn-error.log*
 .DS_Store
 *.pem
 
-# Personal Claude rules
+# Personal Claude rules and local dev log (not for GitHub)
 CLAUDE.local.md
+docs/
