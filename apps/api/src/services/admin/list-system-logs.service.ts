@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm";
+import { count, desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { systemLogs } from "@/db/schema";
 import type {
@@ -10,15 +10,26 @@ import { ErrorCode } from "@repo/types";
 
 export async function listSystemLogs(
   level: LogLevel | undefined,
+  page: number,
   limit: number,
 ): Promise<SystemLogListResponse | ApiErrorResponse> {
   try {
+    const matchingLevel = level ? eq(systemLogs.level, level) : undefined;
+
+    const [totalRow] = await db
+      .select({ total: count() })
+      .from(systemLogs)
+      .where(matchingLevel);
+    const total = totalRow?.total ?? 0;
+    const offset = (page - 1) * limit;
+
     const rows = await db
       .select()
       .from(systemLogs)
-      .where(level ? eq(systemLogs.level, level) : undefined)
+      .where(matchingLevel)
       .orderBy(desc(systemLogs.createdAt))
-      .limit(limit);
+      .limit(limit)
+      .offset(offset);
 
     return {
       success: true,
@@ -32,6 +43,13 @@ export async function listSystemLogs(
           meta: row.meta as Record<string, unknown> | null,
           createdAt: row.createdAt.toISOString(),
         })),
+      },
+      meta: {
+        total,
+        totalPages: Math.max(1, Math.ceil(total / limit)),
+        page,
+        limit,
+        offset,
       },
     };
   } catch (error) {

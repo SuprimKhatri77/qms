@@ -15,7 +15,11 @@ export async function listSystemLogsController(
     return res.status(400).json(query.error);
   }
 
-  const result = await listSystemLogs(query.data.level, query.data.limit);
+  const result = await listSystemLogs(
+    query.data.level,
+    query.data.page,
+    query.data.limit,
+  );
 
   return res
     .status(result.success ? 200 : statusForErrorCode(result.code))
