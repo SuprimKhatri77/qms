@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { queues, shops, tickets } from "@/db/schema";
 import type { ApiErrorResponse, PublicTicketResponse } from "@repo/types";
 import { ErrorCode } from "@repo/types";
+import { logEvent } from "@/lib/system-logs/log-event";
 import { toPublicTicket } from "./map-ticket";
 
 // Polled every ~10s by the customer's ticket page. There's no session to
@@ -43,6 +44,12 @@ export async function getPublicTicket(
     };
   } catch (error) {
     console.error("getPublicTicket failed:", error);
+    logEvent(
+      "error",
+      "get-public-ticket",
+      "getPublicTicket threw an unexpected error",
+      { ticketId, error: String(error) },
+    );
     return {
       success: false,
       message: "Failed to retrieve ticket",

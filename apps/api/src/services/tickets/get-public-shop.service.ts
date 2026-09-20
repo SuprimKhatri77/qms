@@ -2,6 +2,7 @@ import type { ApiErrorResponse, ApiSuccessResponse, Shop } from "@repo/types";
 import { ErrorCode } from "@repo/types";
 import { getShopBySlug } from "@/services/shops/get-shop-by-slug";
 import { toApiShop } from "@/services/shops/map-shop";
+import { logEvent } from "@/lib/system-logs/log-event";
 
 export type GetPublicShopResponse = ApiSuccessResponse<{ shop: Shop }>;
 
@@ -29,6 +30,12 @@ export async function getPublicShop(
     };
   } catch (error) {
     console.error("getPublicShop failed:", error);
+    logEvent(
+      "error",
+      "get-public-shop",
+      "getPublicShop threw an unexpected error",
+      { slug, error: String(error) },
+    );
     return {
       success: false,
       message: "Failed to retrieve shop",

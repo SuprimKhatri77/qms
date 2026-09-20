@@ -21,3 +21,11 @@ export const ticketStatusEnum = pgEnum("ticket_status", [
 ]);
 
 export const queueStatusEnum = pgEnum("queue_status", ["active", "closed"]);
+
+// A suspended shop keeps its history and settings but can't accept new
+// customers, until an admin reactivates it.
+export const shopStatusEnum = pgEnum("shop_status", ["active", "suspended"]);
+
+// Severity for rows in system_logs. Kept small on purpose: this is for
+// admins scanning for trouble, not a full structured-logging pipeline.
+export const logLevelEnum = pgEnum("log_level", ["info", "warning", "error"]);

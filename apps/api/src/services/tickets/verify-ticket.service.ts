@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { queues, shops, ticketVerifications, tickets } from "@/db/schema";
 import type { ApiErrorResponse, VerifyTicketResponse } from "@repo/types";
 import { ErrorCode } from "@repo/types";
+import { logEvent } from "@/lib/system-logs/log-event";
 import { toPublicTicket } from "./map-ticket";
 
 export async function verifyTicket(
@@ -79,6 +80,14 @@ export async function verifyTicket(
     };
   } catch (error) {
     console.error("verifyTicket failed:", error);
+    logEvent(
+      "error",
+      "verify-ticket",
+      "verifyTicket threw an unexpected error",
+      {
+        error: String(error),
+      },
+    );
     return {
       success: false,
       message: "Failed to verify ticket",

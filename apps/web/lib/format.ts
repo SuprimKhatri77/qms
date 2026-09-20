@@ -37,6 +37,19 @@ export function formatHour(hour: number): string {
   return `${twelveHour} ${suffix}`;
 }
 
+// A full ISO timestamp (not a "YYYY-MM-DD" date) in the viewer's own local
+// time, e.g. "Sep 18, 2026, 10:15 AM". Used where there's no single shop
+// timezone to render against, unlike formatTime.
+export function formatDateTime(isoTimestamp: string): string {
+  return new Date(isoTimestamp).toLocaleString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 // Clock time in the shop's own timezone, e.g. "10:15 AM".
 export function formatTime(isoTimestamp: string | null, timeZone: string) {
   if (!isoTimestamp) return "—";

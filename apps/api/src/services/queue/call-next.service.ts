@@ -5,6 +5,7 @@ import type { ApiErrorResponse, QueueSnapshotResponse } from "@repo/types";
 import { ErrorCode } from "@repo/types";
 import { getOwnerShop } from "@/services/shops/get-owner-shop";
 import { sendTurnAlertEmail } from "@/services/tickets/send-turn-alert-email";
+import { logEvent } from "@/lib/system-logs/log-event";
 import { findOrCreateTodaysQueue } from "./find-or-create-queue";
 import { getQueueSnapshotResponse } from "./queue-snapshot";
 
@@ -195,6 +196,10 @@ export async function callNext(
     );
   } catch (error) {
     console.error("callNext failed:", error);
+    logEvent("error", "call-next", "callNext threw an unexpected error", {
+      ownerId,
+      error: String(error),
+    });
     return {
       success: false,
       message: "Failed to call next customer",

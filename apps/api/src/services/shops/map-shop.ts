@@ -9,6 +9,7 @@ export function toApiShop(shop: typeof shops.$inferSelect): Shop {
     name: shop.name,
     slug: shop.slug,
     category: shop.category,
+    status: shop.status,
     city: shop.city,
     area: shop.area,
     address: shop.address,
