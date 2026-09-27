@@ -7,6 +7,7 @@ import {
   conflict,
   notFound,
   serverError,
+  tooManyRequests,
 } from "../common-responses";
 
 // Everything here is reachable with no session: customers never have
@@ -59,6 +60,7 @@ registry.registerPath({
     400: badRequest,
     404: notFound,
     409: conflict,
+    429: tooManyRequests,
     500: serverError,
   },
 });
@@ -84,6 +86,7 @@ registry.registerPath({
     400: badRequest,
     404: notFound,
     409: conflict,
+    429: tooManyRequests,
     500: serverError,
   },
 });

@@ -1,12 +1,20 @@
 "use client";
 
 import { useForm } from "@tanstack/react-form-nextjs";
-import { joinQueueSchema, type JoinQueueRequest } from "@repo/types";
+import { AxiosError } from "axios";
+import {
+  joinQueueSchema,
+  type ApiErrorResponse,
+  type JoinQueueRequest,
+} from "@repo/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
 import { useJoinQueue } from "./hooks/mutations/useJoinQueue";
+import { getRetryAfterSeconds } from "@/lib/rate-limit";
+import { useRetryCountdown } from "@/hooks/use-retry-countdown";
+import { RateLimitNotice } from "@/components/rate-limit-notice";
 
 const inputClassName =
   "h-10 rounded-none border-hairline px-3 text-sm placeholder:text-ink-faint";
@@ -36,12 +44,23 @@ const EMPTY_VALUES: JoinQueueRequest = { name: "", email: "", phone: "" };
 
 export function JoinForm({ slug }: { slug: string }) {
   const joinQueue = useJoinQueue(slug);
+  const retryCountdown = useRetryCountdown(`rate-limit:join:${slug}`);
 
   const form = useForm({
     defaultValues: EMPTY_VALUES,
     validators: { onSubmit: joinQueueSchema },
     onSubmit: async ({ value }) => {
-      await joinQueue.mutateAsync(value).catch(() => undefined);
+      try {
+        await joinQueue.mutateAsync(value);
+      } catch (err) {
+        // Other errors are already shown as a toast by useJoinQueue.
+        const retryAfter = getRetryAfterSeconds(
+          err as AxiosError<ApiErrorResponse>,
+        );
+        if (retryAfter !== null) {
+          retryCountdown.start(retryAfter, value.email);
+        }
+      }
     },
   });
 
@@ -123,20 +142,33 @@ export function JoinForm({ slug }: { slug: string }) {
         }}
       </form.Field>
 
-      <Button
-        type="submit"
-        className="h-10 w-full"
-        disabled={joinQueue.isPending}
-      >
-        {joinQueue.isPending ? (
-          <span className="inline-flex items-center gap-2">
-            <Spinner />
-            Joining...
-          </span>
-        ) : (
-          "Join the queue"
-        )}
-      </Button>
+      <form.Subscribe selector={(state) => state.values.email}>
+        {(email) => {
+          // Only while the form is on the email that was blocked: another
+          // email may be allowed, so the server gets to decide.
+          const secondsLeft = retryCountdown.secondsLeftFor(email);
+
+          return (
+            <>
+              <RateLimitNotice secondsLeft={secondsLeft} />
+              <Button
+                type="submit"
+                className="h-10 w-full"
+                disabled={joinQueue.isPending || secondsLeft > 0}
+              >
+                {joinQueue.isPending ? (
+                  <span className="inline-flex items-center gap-2">
+                    <Spinner />
+                    Joining...
+                  </span>
+                ) : (
+                  "Join the queue"
+                )}
+              </Button>
+            </>
+          );
+        }}
+      </form.Subscribe>
 
       <p className="text-center text-xs text-ink-mute">
         We&apos;ll email you a link to confirm your spot. No account, no app.

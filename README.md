@@ -29,6 +29,11 @@ Turborepo monorepo with Bun: Next.js frontend and Express API backed by PostgreS
                                        │
                               Better Auth (/api/auth)
                               App routes (/api/v1/*)
+                                       │
+                                       ▼
+                               ┌───────────────┐
+                               │ Redis         │  rate-limit counters only
+                               └───────────────┘
 ```
 
 | Path                         | Role                                       |
@@ -50,6 +55,12 @@ Turborepo monorepo with Bun: Next.js frontend and Express API backed by PostgreS
 
 - Drizzle + `postgres.js` against any Postgres URL
 - Local Docker Postgres in development; Neon (or any hosted Postgres) in production via `DATABASE_URL`
+
+### Rate limiting
+
+- Redis-backed limits on login, signup, Better Auth's email-sending routes, and joining a queue / verifying a ticket. Every limit is in [`apps/api/src/lib/rate-limit/rules.ts`](apps/api/src/lib/rate-limit/rules.ts)
+- Blocked requests get `429` with code `RATE_LIMITED` and a `Retry-After` header
+- If Redis is unreachable, requests are let through (rate limiting is off) and the outage is written to the admin system logs
 
 ## Prerequisites
 
@@ -99,12 +110,13 @@ cp .env.example .env.local
 bun run docker:dev:up
 ```
 
-| Service  | URL                                   |
-| -------- | ------------------------------------- |
-| Web      | <http://localhost:3000>               |
-| API      | <http://localhost:5000>               |
-| Health   | <http://localhost:5000/api/v1/health> |
-| Postgres | `localhost:5432`                      |
+| Service  | URL                                                  |
+| -------- | ---------------------------------------------------- |
+| Web      | <http://localhost:3000>                              |
+| API      | <http://localhost:5000>                              |
+| Health   | <http://localhost:5000/api/v1/health>                |
+| Postgres | `localhost:5432`                                     |
+| Redis    | internal only: `docker exec -it qms-redis redis-cli` |
 
 Stop:
 
@@ -112,7 +124,7 @@ Stop:
 bun run docker:dev:down
 ```
 
-Compose file: [`docker-compose.dev.yml`](docker-compose.dev.yml). Inside Docker, the API uses hostname `db` for Postgres (set via compose `DATABASE_URL` override).
+Compose file: [`docker-compose.dev.yml`](docker-compose.dev.yml). Inside Docker, the API uses hostname `db` for Postgres and `redis` for Redis (set via compose `DATABASE_URL` / `REDIS_URL` overrides). Redis publishes no host port, so it can't clash with a Redis already running on your machine.
 
 ## Local development (without Docker for apps)
 
@@ -129,6 +141,9 @@ Compose file: [`docker-compose.dev.yml`](docker-compose.dev.yml). Inside Docker,
    cp .env.example .env.local
    # point apps/api at local Postgres, e.g. in apps/api/.env.development:
    # DATABASE_URL=postgresql://postgres:postgres@localhost:5432/postgres
+   # and at any Redis 7+ (optional: without it, rate limiting is just off), e.g.
+   # docker run -d -p 6379:6379 redis:7-alpine
+   # REDIS_URL=redis://localhost:6379
 
    bun run dev
    # or, if you installed the global CLI: turbo dev
@@ -176,6 +191,8 @@ Copy [`.env.example`](.env.example) → `.env.local` at the repo root (used by C
 | `BETTER_AUTH_SECRET`                | Auth signing secret                           |
 | `BETTER_AUTH_URL`                   | API public URL for Better Auth                |
 | `FRONTEND_URL`                      | Web origin for CORS / emails                  |
+| `REDIS_URL`                         | Redis 7+ for rate limiting (host apps)        |
+| `TRUST_PROXY_HOPS`                  | Proxies in front of the API (default `0`)     |
 
 ## Tooling
 

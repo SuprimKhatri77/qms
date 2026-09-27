@@ -14,6 +14,8 @@ export const ErrorCode = {
   CONFLICT: "CONFLICT",
   DUPLICATE_ENTRY: "DUPLICATE_ENTRY",
   INVALID_REQUEST_PARAMS: "INVALID_REQUEST_PARAMS",
+  // Too many requests in a short time; the Retry-After header says how long to wait
+  RATE_LIMITED: "RATE_LIMITED",
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];
@@ -31,6 +33,10 @@ export const apiErrorResponseSchema = z.object({
   message: z.string(),
   code: z.string(),
   errors: z.array(validationErrorSchema).optional(),
+  // Only on RATE_LIMITED: seconds until the limit resets. Same value as the
+  // Retry-After header, repeated in the body because a browser can't read
+  // that header on a cross-origin response unless CORS exposes it.
+  retryAfterSeconds: z.number().int().optional(),
 });
 
 export type ApiErrorResponse = z.infer<typeof apiErrorResponseSchema>;

@@ -1,6 +1,8 @@
 import { Router } from "express";
 import { joinQueueSchema, verifyTicketSchema } from "@repo/types";
 import { validate } from "@/middlewares/validate";
+import { rateLimit } from "@/middlewares/rate-limit";
+import { joinRules, verifyRules } from "@/lib/rate-limit/rules";
 import { getPublicShopController } from "@/controllers/tickets/get-public-shop.controller";
 import { joinQueueController } from "@/controllers/tickets/join-queue.controller";
 import { verifyTicketController } from "@/controllers/tickets/verify-ticket.controller";
@@ -16,11 +18,13 @@ publicRoutes.get("/shops/:slug", getPublicShopController);
 publicRoutes.post(
   "/shops/:slug/tickets",
   validate(joinQueueSchema),
+  rateLimit(joinRules),
   joinQueueController,
 );
 publicRoutes.post(
   "/tickets/verify",
   validate(verifyTicketSchema),
+  rateLimit(verifyRules),
   verifyTicketController,
 );
 publicRoutes.get("/tickets/:ticketId", getPublicTicketController);

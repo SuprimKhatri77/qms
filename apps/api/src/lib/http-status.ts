@@ -12,6 +12,8 @@ export function statusForErrorCode(code: string): number {
     case ErrorCode.CONFLICT:
     case ErrorCode.DUPLICATE_ENTRY:
       return 409;
+    case ErrorCode.RATE_LIMITED:
+      return 429;
     case ErrorCode.INTERNAL_SERVER_ERROR:
       return 500;
     default:
