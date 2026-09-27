@@ -26,6 +26,33 @@ const ticketIdParam = z.object({ ticketId: z.uuid() });
 
 registry.registerPath({
   method: "get",
+  path: "/api/v1/public/shops",
+  tags: ["Public"],
+  summary: "Find shops (discovery)",
+  description:
+    'Powers the public /explore page. Filter by city (case-insensitive) and category, or send lat+lng for "near me": a bounding-box prefilter, then the exact Haversine distance within radiusKm, nearest first. Suspended shops never appear. Today\'s queue is only read, never created. At most 50 results.',
+  request: { query: discoverShopsQuerySchema },
+  responses: {
+    200: {
+      description: "Matching shops, and every city with an active shop.",
+      content: {
+        "application/json": {
+          schema: apiSuccessSchema(
+            z.object({
+              shops: z.array(discoveredShopSchema),
+              cities: z.array(z.string()),
+            }),
+          ),
+        },
+      },
+    },
+    400: badRequest,
+    500: serverError,
+  },
+});
+
+registry.registerPath({
+  method: "get",
   path: "/api/v1/public/shops/{slug}",
   tags: ["Public"],
   summary: "Get a shop's public info by slug",
@@ -124,33 +151,6 @@ registry.registerPath({
     },
     400: badRequest,
     404: notFound,
-    500: serverError,
-  },
-});
-
-registry.registerPath({
-  method: "get",
-  path: "/api/v1/public/shops",
-  tags: ["Public"],
-  summary: "Find shops (discovery)",
-  description:
-    'Powers the public /explore page. Filter by city (case-insensitive) and category, or send lat+lng for "near me": a bounding-box prefilter, then the exact Haversine distance within radiusKm, nearest first. Suspended shops never appear. Today\'s queue is only read, never created. At most 50 results.',
-  request: { query: discoverShopsQuerySchema },
-  responses: {
-    200: {
-      description: "Matching shops, and every city with an active shop.",
-      content: {
-        "application/json": {
-          schema: apiSuccessSchema(
-            z.object({
-              shops: z.array(discoveredShopSchema),
-              cities: z.array(z.string()),
-            }),
-          ),
-        },
-      },
-    },
-    400: badRequest,
     500: serverError,
   },
 });
