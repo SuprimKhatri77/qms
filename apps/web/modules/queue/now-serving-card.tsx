@@ -10,9 +10,25 @@ type NowServingCardProps = {
   serving: QueueTicket | null;
   // "Call next" only makes sense when someone is waiting
   hasWaiting: boolean;
+  // Closed to new customers; only changes the empty-state hint
+  isClosed: boolean;
 };
 
-export function NowServingCard({ serving, hasWaiting }: NowServingCardProps) {
+function emptyStateHint(hasWaiting: boolean, isClosed: boolean): string {
+  if (hasWaiting) {
+    return "Call the next customer when you're ready.";
+  }
+  if (isClosed) {
+    return "Nobody is waiting, and the queue is closed to new customers.";
+  }
+  return "Customers who join and verify their email will appear here.";
+}
+
+export function NowServingCard({
+  serving,
+  hasWaiting,
+  isClosed,
+}: NowServingCardProps) {
   const callNext = useCallNext();
   const resolveTicket = useResolveTicket();
 
@@ -26,9 +42,7 @@ export function NowServingCard({ serving, hasWaiting }: NowServingCardProps) {
         </p>
         <p className="mt-4 text-lg text-ink">Nobody is being served.</p>
         <p className="mt-1 text-sm text-ink-mute">
-          {hasWaiting
-            ? "Call the next customer when you're ready."
-            : "Customers who join and verify their email will appear here."}
+          {emptyStateHint(hasWaiting, isClosed)}
         </p>
         <Button
           size="lg"

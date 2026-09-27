@@ -153,3 +153,11 @@ export type UpdateShopResponse = ApiSuccessResponse<{ shop: Shop }>;
 
 // `shop` is null while the owner hasn't finished onboarding yet.
 export type GetMyShopResponse = ApiSuccessResponse<{ shop: Shop | null }>;
+
+// What the public join page ("/s/<slug>") loads. `queueOpen` is false once
+// the owner has closed today's queue, so the page can say so up front
+// instead of the customer only finding out when they submit the form.
+export type GetPublicShopResponse = ApiSuccessResponse<{
+  shop: Shop;
+  queueOpen: boolean;
+}>;

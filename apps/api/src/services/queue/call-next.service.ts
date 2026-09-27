@@ -61,15 +61,10 @@ export async function callNext(
           .where(eq(queues.id, todaysQueue.id))
           .for("update");
 
-        if (!queue || queue.status !== "active") {
-          return {
-            failure: {
-              success: false,
-              message: "Today's queue is closed",
-              code: ErrorCode.CONFLICT,
-            },
-            alerts: [],
-          };
+        // Deliberately no "is the queue closed?" check: closing only stops
+        // new customers joining. Everyone already in line still gets served.
+        if (!queue) {
+          throw new Error(`Queue ${todaysQueue.id} not found`);
         }
 
         // One customer at a time (single counter): finish the current one first.

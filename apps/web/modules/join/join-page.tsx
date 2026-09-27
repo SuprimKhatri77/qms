@@ -3,7 +3,36 @@ import { SHOP_CATEGORY_LABELS } from "@repo/types";
 import { Logo } from "@/modules/landing/logo";
 import { JoinForm } from "./join-form";
 
-export function JoinPage({ shop }: { shop: Shop }) {
+type JoinPageProps = {
+  shop: Shop;
+  // False once the owner has closed today's queue to new customers
+  queueOpen: boolean;
+};
+
+// What goes in the card: the form, or the reason it can't be used. A
+// suspended shop is checked first, because an admin's decision outranks
+// the owner's open/closed switch.
+function JoinCardContent({ shop, queueOpen }: JoinPageProps) {
+  if (shop.status === "suspended") {
+    return (
+      <p className="text-center text-sm text-ink-mute">
+        This shop isn&apos;t accepting customers right now.
+      </p>
+    );
+  }
+
+  if (!queueOpen) {
+    return (
+      <p className="text-center text-sm text-ink-mute">
+        This queue is closed for today. Check back later.
+      </p>
+    );
+  }
+
+  return <JoinForm slug={shop.slug} />;
+}
+
+export function JoinPage({ shop, queueOpen }: JoinPageProps) {
   const location = [shop.area, shop.city].filter(Boolean).join(", ");
 
   return (
@@ -21,13 +50,7 @@ export function JoinPage({ shop }: { shop: Shop }) {
         </div>
 
         <div className="rounded-none border border-hairline bg-canvas p-8 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
-          {shop.status === "suspended" ? (
-            <p className="text-center text-sm text-ink-mute">
-              This shop isn&apos;t accepting customers right now.
-            </p>
-          ) : (
-            <JoinForm slug={shop.slug} />
-          )}
+          <JoinCardContent shop={shop} queueOpen={queueOpen} />
         </div>
       </div>
     </div>
