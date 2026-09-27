@@ -5,6 +5,7 @@ import { AxiosError } from "axios";
 import { signup } from "../../api/auth";
 import { toast } from "sonner";
 import { getHomePath } from "@/lib/home-path";
+import { getRetryAfterSeconds } from "@/lib/rate-limit";
 
 export const useSignup = () => {
   const router = useRouter();
@@ -21,6 +22,12 @@ export const useSignup = () => {
       router.refresh();
     },
     onError: (error) => {
+      // A rate-limit block is shown in the form itself, with a live
+      // countdown, so a toast here would say the same thing twice.
+      if (getRetryAfterSeconds(error) !== null) {
+        return;
+      }
+
       toast.error(
         error.response?.data.message || error.message || "Failed to signup",
       );

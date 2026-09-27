@@ -10,6 +10,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
 import { mapFieldErrors } from "@/lib/map-field-errors";
+import { getRetryAfterSeconds } from "@/lib/rate-limit";
+import { useCountdown } from "@/hooks/use-countdown";
+import { RateLimitNotice } from "@/components/rate-limit-notice";
 import { PasswordInput } from "./password-input";
 import { useLogin } from "./hooks/mutations/useLogin";
 
@@ -17,6 +20,7 @@ export function LoginForm() {
   const [errors, setErrors] =
     useState<Partial<Record<keyof LoginRequest, string>>>();
   const login = useLogin();
+  const retryCountdown = useCountdown();
 
   function clearFieldError(field: keyof LoginRequest) {
     setErrors((prev) => {
@@ -44,6 +48,11 @@ export function LoginForm() {
         const data = error.response?.data;
         if (data?.errors?.length) {
           setErrors(mapFieldErrors(data.errors));
+        }
+
+        const retryAfter = getRetryAfterSeconds(error);
+        if (retryAfter !== null) {
+          retryCountdown.start(retryAfter);
         }
       }
     },
@@ -131,7 +140,13 @@ export function LoginForm() {
         }}
       </form.Field>
 
-      <Button type="submit" className="h-10 w-full" disabled={login.isPending}>
+      <RateLimitNotice secondsLeft={retryCountdown.secondsLeft} />
+
+      <Button
+        type="submit"
+        className="h-10 w-full"
+        disabled={login.isPending || retryCountdown.secondsLeft > 0}
+      >
         {login.isPending ? (
           <span className="inline-flex items-center gap-2">
             <Spinner />

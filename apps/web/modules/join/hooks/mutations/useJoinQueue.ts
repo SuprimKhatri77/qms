@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { AxiosError } from "axios";
 import { toast } from "sonner";
 import { joinQueue } from "../../api/join";
+import { getRetryAfterSeconds } from "@/lib/rate-limit";
 
 export const useJoinQueue = (slug: string) => {
   const router = useRouter();
@@ -25,6 +26,12 @@ export const useJoinQueue = (slug: string) => {
       router.push(`/s/${slug}/ticket/${result.data.ticketId}`);
     },
     onError: (error) => {
+      // A rate-limit block is shown in the form itself, with a live
+      // countdown, so a toast here would say the same thing twice.
+      if (getRetryAfterSeconds(error) !== null) {
+        return;
+      }
+
       toast.error(
         error.response?.data.message ||
           error.message ||

@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+  formatCountdown,
   formatDateTime,
   formatHour,
   formatLongDate,
@@ -80,5 +81,18 @@ describe("formatTime", () => {
     // 06:00 UTC is 11:45 in Asia/Kathmandu (UTC+5:45).
     const result = formatTime("2026-09-18T06:00:00.000Z", "Asia/Kathmandu");
     expect(result).toBe("11:45 AM");
+  });
+});
+
+describe("formatCountdown", () => {
+  test("shows plain seconds under a minute", () => {
+    expect(formatCountdown(59)).toBe("59s");
+    expect(formatCountdown(1)).toBe("1s");
+  });
+
+  test("shows minutes and zero-padded seconds from a minute up", () => {
+    expect(formatCountdown(60)).toBe("1:00");
+    expect(formatCountdown(65)).toBe("1:05");
+    expect(formatCountdown(899)).toBe("14:59");
   });
 });

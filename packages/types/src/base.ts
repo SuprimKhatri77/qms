@@ -33,6 +33,10 @@ export const apiErrorResponseSchema = z.object({
   message: z.string(),
   code: z.string(),
   errors: z.array(validationErrorSchema).optional(),
+  // Only on RATE_LIMITED: seconds until the limit resets. Same value as the
+  // Retry-After header, repeated in the body because a browser can't read
+  // that header on a cross-origin response unless CORS exposes it.
+  retryAfterSeconds: z.number().int().optional(),
 });
 
 export type ApiErrorResponse = z.infer<typeof apiErrorResponseSchema>;

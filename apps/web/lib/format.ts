@@ -60,3 +60,14 @@ export function formatTime(isoTimestamp: string | null, timeZone: string) {
     timeZone,
   });
 }
+
+// A ticking "try again in" countdown: 59 -> "59s", 899 -> "14:59".
+export function formatCountdown(totalSeconds: number): string {
+  if (totalSeconds < 60) {
+    return `${totalSeconds}s`;
+  }
+
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}

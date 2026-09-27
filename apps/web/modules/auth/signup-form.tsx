@@ -14,6 +14,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
 import { mapFieldErrors } from "@/lib/map-field-errors";
+import { getRetryAfterSeconds } from "@/lib/rate-limit";
+import { useCountdown } from "@/hooks/use-countdown";
+import { RateLimitNotice } from "@/components/rate-limit-notice";
 import { PasswordInput } from "./password-input";
 import { useSignup } from "./hooks/mutations/useSignup";
 
@@ -21,6 +24,7 @@ export function SignupForm() {
   const [errors, setErrors] =
     useState<Partial<Record<keyof SignupFormValues, string>>>();
   const signup = useSignup();
+  const retryCountdown = useCountdown();
 
   function clearFieldError(field: keyof SignupFormValues) {
     setErrors((prev) => {
@@ -51,6 +55,11 @@ export function SignupForm() {
         const data = error.response?.data;
         if (data?.errors?.length) {
           setErrors(mapFieldErrors(data.errors));
+        }
+
+        const retryAfter = getRetryAfterSeconds(error);
+        if (retryAfter !== null) {
+          retryCountdown.start(retryAfter);
         }
       }
     },
@@ -223,10 +232,12 @@ export function SignupForm() {
       </div>
 
       <div className="flex flex-col gap-4 pt-1">
+        <RateLimitNotice secondsLeft={retryCountdown.secondsLeft} />
+
         <Button
           type="submit"
           className="h-11 w-full text-sm"
-          disabled={signup.isPending}
+          disabled={signup.isPending || retryCountdown.secondsLeft > 0}
         >
           {signup.isPending ? (
             <span className="inline-flex items-center gap-2">

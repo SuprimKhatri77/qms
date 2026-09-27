@@ -72,6 +72,7 @@ export function rateLimit(rules: RateLimitRule[]) {
       success: false,
       message: `Too many attempts. Please try again in ${describeWait(blocked.retryAfterSeconds)}.`,
       code: ErrorCode.RATE_LIMITED,
+      retryAfterSeconds: blocked.retryAfterSeconds,
     });
   };
 }
