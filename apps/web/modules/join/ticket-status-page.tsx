@@ -36,7 +36,10 @@ const STATUS_COPY: Partial<
   },
   expired: {
     title: "Ticket expired",
-    description: "This queue closed before your turn came up.",
+    // Covers both ways a ticket expires: the confirmation link ran out
+    // before it was clicked, or the queue ended before the ticket was called.
+    description:
+      "You didn't confirm in time, or the queue closed before your turn.",
   },
 };
 
