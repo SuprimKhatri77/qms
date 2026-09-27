@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { eq, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { queues, shops, tickets } from "@/db/schema";
 import { callNext } from "@/services/queue/call-next.service";
@@ -16,6 +16,12 @@ import {
 } from "./support/fixtures";
 import type { Shop } from "@repo/types";
 
+// Closing times used here are chosen so the result doesn't depend on when
+// the tests run: "00:00" has always passed today, "23:59" hasn't yet (except
+// during the day's last minute).
+const ALREADY_CLOSED = "00:00";
+const NOT_CLOSED_YET = "23:59";
+
 // The sweeper works across every shop, so these tests look only at the
 // rows they created, never at totals.
 describe("queue expiry sweep", () => {
@@ -24,19 +30,17 @@ describe("queue expiry sweep", () => {
 
   beforeEach(async () => {
     ownerId = await createTestOwner();
-    shop = await createTestShop(ownerId, { queueExpiryHours: 8 });
+    // Created without a closing time, so customers can join; each test
+    // then sets the closing time it needs.
+    shop = await createTestShop(ownerId);
   });
 
   afterEach(async () => {
     await deleteTestOwner(ownerId);
   });
 
-  // Pretends the shop's queue opened `hours` ago.
-  async function openedHoursAgo(hours: number) {
-    await db
-      .update(queues)
-      .set({ createdAt: sql`now() - make_interval(hours => ${hours})` })
-      .where(eq(queues.shopId, shop.id));
+  async function setClosingTime(shopId: string, closingTime: string | null) {
+    await db.update(shops).set({ closingTime }).where(eq(shops.id, shopId));
   }
 
   async function queueOf() {
@@ -55,7 +59,7 @@ describe("queue expiry sweep", () => {
     return ticket!;
   }
 
-  test("once its hours are up, the queue closes and people still in line expire", async () => {
+  test("past closing time, the queue closes and people still in line expire", async () => {
     const serving = await joinAndVerify(
       shop.slug,
       "Served",
@@ -73,7 +77,7 @@ describe("queue expiry sweep", () => {
     if (!pending.success) throw new Error("join failed");
     await callNext(ownerId);
 
-    await openedHoursAgo(9);
+    await setClosingTime(shop.id, ALREADY_CLOSED);
     await expireFinishedQueues();
 
     const queue = await queueOf();
@@ -87,14 +91,14 @@ describe("queue expiry sweep", () => {
     expect((await statusOf(serving)).status).toBe("serving");
   });
 
-  test("a queue within its hours is left alone", async () => {
+  test("before closing time the queue is left alone", async () => {
     const waiting = await joinAndVerify(
       shop.slug,
       "Early",
       testCustomerEmail("early"),
     );
 
-    await openedHoursAgo(7);
+    await setClosingTime(shop.id, NOT_CLOSED_YET);
     await expireFinishedQueues();
 
     expect((await queueOf()).status).toBe("active");
@@ -102,7 +106,20 @@ describe("queue expiry sweep", () => {
     expect((await statusOf(waiting)).status).toBe("waiting");
   });
 
-  test("yesterday's queue expires even if its hours aren't up", async () => {
+  test("with no closing time, today's queue stays open", async () => {
+    const waiting = await joinAndVerify(
+      shop.slug,
+      "AllDay",
+      testCustomerEmail("allday"),
+    );
+
+    await expireFinishedQueues();
+
+    expect((await queueOf()).status).toBe("active");
+    expect((await statusOf(waiting)).status).toBe("waiting");
+  });
+
+  test("yesterday's queue expires even with no closing time", async () => {
     const waiting = await joinAndVerify(
       shop.slug,
       "Overnight",
@@ -124,9 +141,7 @@ describe("queue expiry sweep", () => {
   test("another shop's queue is untouched", async () => {
     const otherOwnerId = await createTestOwner();
     try {
-      const otherShop = await createTestShop(otherOwnerId, {
-        queueExpiryHours: 8,
-      });
+      const otherShop = await createTestShop(otherOwnerId);
       const otherTicket = await joinAndVerify(
         otherShop.slug,
         "Elsewhere",
@@ -134,7 +149,7 @@ describe("queue expiry sweep", () => {
       );
       await joinAndVerify(shop.slug, "Here", testCustomerEmail("here"));
 
-      await openedHoursAgo(9);
+      await setClosingTime(shop.id, ALREADY_CLOSED);
       await expireFinishedQueues();
 
       expect((await statusOf(otherTicket)).status).toBe("waiting");
@@ -145,7 +160,7 @@ describe("queue expiry sweep", () => {
 
   test("a queue is only expired once, even if the owner reopens it", async () => {
     await joinAndVerify(shop.slug, "First", testCustomerEmail("first"));
-    await openedHoursAgo(9);
+    await setClosingTime(shop.id, ALREADY_CLOSED);
     await expireFinishedQueues();
     const firstExpiry = (await queueOf()).expiredAt;
 
@@ -161,40 +176,38 @@ describe("queue expiry sweep", () => {
     expect(queue.expiredAt?.getTime()).toBe(firstExpiry?.getTime());
   });
 
-  test("after expiry, joining is refused and the customer sees 'expired'", async () => {
+  test("past closing time, joining is refused at once, before any sweep", async () => {
+    await setClosingTime(shop.id, ALREADY_CLOSED);
+
+    const result = await joinQueue(shop.slug, {
+      name: "Late",
+      email: testCustomerEmail("late"),
+    });
+    expect(result.success).toBe(false);
+    if (result.success) return;
+    expect(result.code).toBe("CONFLICT");
+
+    // Refused before today's queue was even created.
+    const rows = await db
+      .select()
+      .from(queues)
+      .where(eq(queues.shopId, shop.id));
+    expect(rows).toHaveLength(0);
+  });
+
+  test("after expiry, the customer sees 'expired' with no position", async () => {
     const waiting = await joinAndVerify(
       shop.slug,
       "Late",
       testCustomerEmail("late"),
     );
-    await openedHoursAgo(9);
+    await setClosingTime(shop.id, ALREADY_CLOSED);
     await expireFinishedQueues();
-
-    const rejoin = await joinQueue(shop.slug, {
-      name: "Newcomer",
-      email: testCustomerEmail("newcomer"),
-    });
-    expect(rejoin.success).toBe(false);
-    if (rejoin.success) return;
-    expect(rejoin.code).toBe("CONFLICT");
 
     const ticket = await getPublicTicket(waiting);
     expect(ticket.success).toBe(true);
     if (!ticket.success) return;
     expect(ticket.data.ticket.status).toBe("expired");
     expect(ticket.data.ticket.position).toBeNull();
-  });
-
-  test("the shop's own expiry hours are used", async () => {
-    await db
-      .update(shops)
-      .set({ queueExpiryHours: 2 })
-      .where(eq(shops.id, shop.id));
-    await joinAndVerify(shop.slug, "Short", testCustomerEmail("short"));
-
-    await openedHoursAgo(3);
-    await expireFinishedQueues();
-
-    expect((await queueOf()).status).toBe("closed");
   });
 });

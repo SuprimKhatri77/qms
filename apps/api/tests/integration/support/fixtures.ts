@@ -37,7 +37,6 @@ const baseShopData: CreateShopRequest = {
   category: "barber",
   city: "Kathmandu",
   avgServiceMinutes: 10,
-  queueExpiryHours: 24,
 };
 
 // Creates the one shop `createShop` allows per owner. Goes through the real

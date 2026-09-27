@@ -47,7 +47,13 @@ export const shopSchema = z.object({
   lng: z.number().nullable(),
   timezone: z.string(),
   avgServiceMinutes: z.number(),
-  queueExpiryHours: z.number(),
+  closingTime: z
+    .string()
+    .nullable()
+    .openapi({
+      description:
+        'Shop-local "HH:MM"; null means the queue closes at midnight.',
+    }),
   createdAt: z.iso.datetime(),
   updatedAt: z.iso.datetime(),
 });

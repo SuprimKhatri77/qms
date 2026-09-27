@@ -10,6 +10,7 @@ import type {
 import { ErrorCode } from "@repo/types";
 import { getShopBySlug } from "@/services/shops/get-shop-by-slug";
 import { findOrCreateTodaysQueue } from "@/services/queue/find-or-create-queue";
+import { isPastClosingTime } from "@/services/queue/local-date";
 import { sendMail } from "@/lib/emails/send-email";
 import { logEvent } from "@/lib/system-logs/log-event";
 
@@ -43,6 +44,17 @@ export async function joinQueue(
       return {
         success: false,
         message: "This shop isn't accepting customers right now",
+        code: ErrorCode.CONFLICT,
+      };
+    }
+
+    // Past the shop's closing time nobody new can join, from that exact
+    // minute. The expiry sweep closes the queue itself a few minutes later;
+    // this check means no one slips in during that gap.
+    if (isPastClosingTime(shop.closingTime, shop.timezone)) {
+      return {
+        success: false,
+        message: "This queue isn't accepting customers right now",
         code: ErrorCode.CONFLICT,
       };
     }

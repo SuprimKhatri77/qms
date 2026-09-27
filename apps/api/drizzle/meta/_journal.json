@@ -36,6 +36,13 @@
       "when": 1790520853638,
       "tag": "0004_early_shadow_king",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790523489850,
+      "tag": "0005_curly_eddie_brock",
+      "breakpoints": true
     }
   ]
 }

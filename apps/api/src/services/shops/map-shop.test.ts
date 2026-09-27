@@ -20,7 +20,7 @@ const shopRow = {
   email: null,
   phone: null,
   avgServiceMinutes: 15,
-  queueExpiryHours: 12,
+  closingTime: "19:00:00",
   createdAt: new Date("2026-09-01T00:00:00.000Z"),
   updatedAt: new Date("2026-09-02T00:00:00.000Z"),
 };
@@ -37,7 +37,8 @@ describe("toApiShop", () => {
     expect(shop.city).toBe(shopRow.city);
     expect(shop.timezone).toBe(shopRow.timezone);
     expect(shop.avgServiceMinutes).toBe(shopRow.avgServiceMinutes);
-    expect(shop.queueExpiryHours).toBe(shopRow.queueExpiryHours);
+    // Postgres's "HH:MM:SS" is trimmed to "HH:MM".
+    expect(shop.closingTime).toBe("19:00");
   });
 
   test("leaves ownerId out of the result", () => {

@@ -17,8 +17,7 @@ export type ExpirySweepResult = {
  * Closes every queue that has finished, and expires the tickets still
  * waiting in it. A queue is finished at whichever comes first:
  *
- *  1. `queue_expiry_hours` after it opened (its created_at: queues are
- *     created lazily, at the day's first join or dashboard visit), or
+ *  1. the shop's closing time (e.g. 19:00, shop-local), if it has one, or
  *  2. the end of its day, in the shop's own timezone. The owner's dashboard
  *     only ever shows today's queue, so yesterday's leftovers can never be
  *     called.
@@ -32,12 +31,15 @@ export async function expireFinishedQueues(): Promise<ExpirySweepResult> {
   return db.transaction(async (tx) => {
     const now = new Date();
 
-    // Compared with the database's own now(), the same clock that wrote
-    // created_at, so both sides are in the same timezone.
-    const hoursUsedUp = sql`${queues.createdAt} + make_interval(hours => ${shops.queueExpiryHours}) <= now()`;
-    // `now() AT TIME ZONE <tz>` is the wall-clock time in the shop's city,
-    // so this compares the queue's day with the shop's own "today".
-    const dayIsOver = sql`${queues.date} < (now() AT TIME ZONE ${shops.timezone})::date`;
+    // `now() AT TIME ZONE <tz>` is the wall-clock date and time in the
+    // shop's city, so both rules use the shop's own "today" and "now".
+    const shopNow = sql`(now() AT TIME ZONE ${shops.timezone})`;
+    const dayIsOver = sql`${queues.date} < ${shopNow}::date`;
+    // Only today's queue can be past today's closing time (an older queue is
+    // already caught by dayIsOver).
+    const pastClosingTime = sql`${shops.closingTime} IS NOT NULL
+      AND ${queues.date} = ${shopNow}::date
+      AND ${shopNow}::time >= ${shops.closingTime}`;
 
     const finished = await tx
       .update(queues)
@@ -47,7 +49,7 @@ export async function expireFinishedQueues(): Promise<ExpirySweepResult> {
         and(
           eq(shops.id, queues.shopId),
           isNull(queues.expiredAt),
-          or(hoursUsedUp, dayIsOver),
+          or(pastClosingTime, dayIsOver),
         ),
       )
       .returning({ id: queues.id });

@@ -95,14 +95,20 @@ export const createShopSchema = z
       .int({ error: "Average service time must be a whole number" })
       .min(1, { error: "Average service time must be at least 1 minute" })
       .max(180, { error: "Average service time must be at most 180 minutes" }),
-    // How long after opening a day's queue stays open before it auto-closes.
-    // At most 24: a queue always ends with its day anyway (see
-    // expire-finished-queues.service.ts), so a longer value could never apply.
-    queueExpiryHours: z
-      .number({ error: "Queue expiry must be a number" })
-      .int({ error: "Queue expiry must be a whole number" })
-      .min(1, { error: "Queue expiry must be at least 1 hour" })
-      .max(24, { error: "Queue expiry must be at most 24 hours" }),
+    // Shop-local time ("HH:MM", 24-hour) after which nobody new can join and
+    // the day's queue closes. Optional: without one the queue closes at
+    // midnight (see expire-finished-queues.service.ts).
+    closingTime: z
+      .string()
+      .trim()
+      .refine(
+        (value) => value === "" || /^([01]\d|2[0-3]):[0-5]\d$/.test(value),
+        {
+          error: "Enter a time like 19:00",
+        },
+      )
+      .transform((value) => (value === "" ? undefined : value))
+      .optional(),
   })
   .refine((data) => (data.lat === undefined) === (data.lng === undefined), {
     error: "Pick a location on the map, or leave it blank",
@@ -144,7 +150,8 @@ export type Shop = {
   lng: number | null;
   timezone: string;
   avgServiceMinutes: number;
-  queueExpiryHours: number;
+  // "HH:MM" in the shop's timezone, or null to close at midnight.
+  closingTime: string | null;
   createdAt: string;
   updatedAt: string;
 };

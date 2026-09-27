@@ -17,3 +17,27 @@ export function addDays(date: string, days: number): string {
   moved.setUTCDate(moved.getUTCDate() + days);
   return moved.toISOString().slice(0, 10);
 }
+
+// The shop's own wall-clock time as "HH:MM" (24-hour), e.g. "19:05".
+export function getShopLocalTime(timezone: string, now = new Date()): string {
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone: timezone,
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).format(now);
+}
+
+// True once the shop's local time has reached its closing time. "HH:MM"
+// strings compare correctly as text ("09:30" < "19:00"). No closing time
+// means the queue only ends at midnight, which the new day handles.
+export function isPastClosingTime(
+  closingTime: string | null,
+  timezone: string,
+  now = new Date(),
+): boolean {
+  if (!closingTime) {
+    return false;
+  }
+  return getShopLocalTime(timezone, now) >= closingTime.slice(0, 5);
+}
