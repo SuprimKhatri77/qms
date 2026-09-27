@@ -1,20 +1,7 @@
 "use client";
 
 import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
-import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
-import markerIcon from "leaflet/dist/images/marker-icon.png";
-import markerShadow from "leaflet/dist/images/marker-shadow.png";
-
-// Leaflet's default marker image points at a relative path meant for a plain
-// <img src>, which breaks once the icons are bundled by Next. Pointing it at
-// the bundled URLs instead is the standard fix, done once when this module loads.
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: markerIcon2x.src,
-  iconUrl: markerIcon.src,
-  shadowUrl: markerShadow.src,
-});
+import "@/lib/leaflet-setup";
 
 // Kathmandu — a reasonable starting view before the owner has picked a spot.
 const DEFAULT_CENTER: [number, number] = [27.7172, 85.324];
