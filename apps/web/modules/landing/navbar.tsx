@@ -22,6 +22,7 @@ import { useLogout } from "@/modules/auth/hooks/mutations/useLogout";
 import { Logo } from "./logo";
 
 const navLinks = [
+  { href: "/explore", label: "Find a shop" },
   { href: "/#features", label: "Features" },
   { href: "/#how-it-works", label: "How it works" },
   { href: "/#faq", label: "FAQ" },

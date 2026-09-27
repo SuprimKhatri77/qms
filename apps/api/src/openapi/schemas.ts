@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { paginationMetaSchema } from "@repo/types";
+import { paginationMetaSchema, SHOP_CATEGORIES } from "@repo/types";
 
 // Response bodies aren't validated with zod at runtime (only request bodies
 // and query strings are) — the types in @repo/types are plain TypeScript.
@@ -173,3 +173,26 @@ export const systemLogSchema = z.object({
 });
 
 export { paginationMetaSchema };
+
+export const discoveredShopSchema = z.object({
+  id: z.uuid(),
+  name: z.string(),
+  slug: z.string(),
+  category: z.enum(SHOP_CATEGORIES),
+  city: z.string(),
+  area: z.string().nullable(),
+  lat: z.number().nullable(),
+  lng: z.number().nullable(),
+  distanceKm: z
+    .number()
+    .nullable()
+    .openapi({
+      description: "Distance from the searched location; null without one.",
+    }),
+  queueOpen: z
+    .boolean()
+    .openapi({ description: "Whether today's queue is taking new customers." }),
+  waitingCount: z
+    .number()
+    .openapi({ description: "Verified customers waiting in today's queue." }),
+});

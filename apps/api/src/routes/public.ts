@@ -4,6 +4,7 @@ import { validate } from "@/middlewares/validate";
 import { rateLimit } from "@/middlewares/rate-limit";
 import { joinRules, verifyRules } from "@/lib/rate-limit/rules";
 import { getPublicShopController } from "@/controllers/tickets/get-public-shop.controller";
+import { discoverShopsController } from "@/controllers/shops/discover-shops.controller";
 import { joinQueueController } from "@/controllers/tickets/join-queue.controller";
 import { verifyTicketController } from "@/controllers/tickets/verify-ticket.controller";
 import { getPublicTicketController } from "@/controllers/tickets/get-public-ticket.controller";
@@ -14,6 +15,7 @@ import { getPublicTicketController } from "@/controllers/tickets/get-public-tick
 // ever inheriting an auth gate by accident.
 const publicRoutes = Router();
 
+publicRoutes.get("/shops", discoverShopsController);
 publicRoutes.get("/shops/:slug", getPublicShopController);
 publicRoutes.post(
   "/shops/:slug/tickets",

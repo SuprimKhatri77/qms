@@ -71,3 +71,13 @@ export function formatCountdown(totalSeconds: number): string {
   const seconds = totalSeconds % 60;
   return `${minutes}:${String(seconds).padStart(2, "0")}`;
 }
+
+// 0.85 -> "850 m away", 1.234 -> "1.2 km away". Under a kilometre, metres
+// read better; rounded to the nearest 10 m, since GPS isn't more exact.
+export function formatDistance(km: number): string {
+  const metres = Math.round(km * 100) * 10;
+  if (metres < 1000) {
+    return `${metres} m away`;
+  }
+  return `${km.toFixed(1)} km away`;
+}
