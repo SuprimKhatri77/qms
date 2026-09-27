@@ -34,3 +34,12 @@ export const getPublicTicket = async (
   );
   return res.data;
 };
+
+export const cancelTicket = async (
+  ticketId: string,
+): Promise<PublicTicketResponse> => {
+  const res = await api.post<PublicTicketResponse>(
+    `/public/tickets/${ticketId}/cancel`,
+  );
+  return res.data;
+};

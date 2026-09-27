@@ -1,8 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import type { PublicTicketResponse, TicketStatus } from "@repo/types";
+import { Button } from "@/components/ui/button";
 import { Logo } from "@/modules/landing/logo";
 import { usePublicTicket } from "./hooks/queries/usePublicTicket";
+import { LeaveQueueButton } from "./leave-queue-button";
 
 type TicketStatusPageProps = {
   ticketId: string;
@@ -39,6 +42,20 @@ const STATUS_COPY: Partial<
     description: "This queue closed before your turn came up.",
   },
 };
+
+// Still in line: the customer may leave. Once they're being served it's
+// the owner's call, so the button disappears.
+const LEAVABLE_STATUSES = new Set<TicketStatus>([
+  "pending_verification",
+  "waiting",
+]);
+
+// Finished without being served: offer a way back into the queue.
+const REJOINABLE_STATUSES = new Set<TicketStatus>([
+  "cancelled",
+  "expired",
+  "no_show",
+]);
 
 export function TicketStatusPage({
   ticketId,
@@ -78,12 +95,25 @@ export function TicketStatusPage({
               <p className="mt-2 text-sm text-ink-mute">
                 {copy?.description ?? ""}
               </p>
+              {REJOINABLE_STATUSES.has(ticket.status) ? (
+                <Button
+                  className="mt-6"
+                  nativeButton={false}
+                  render={<Link href={`/s/${shop.slug}`} />}
+                >
+                  Join again
+                </Button>
+              ) : null}
             </>
           )}
 
           <p className="mt-6 border-t border-hairline pt-4 text-xs text-ink-mute">
             Token #{ticket.tokenNumber} · {ticket.customerName}
           </p>
+
+          {LEAVABLE_STATUSES.has(ticket.status) ? (
+            <LeaveQueueButton ticketId={ticket.id} />
+          ) : null}
         </div>
       </div>
     </div>
