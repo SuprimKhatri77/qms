@@ -89,10 +89,7 @@ describe("join -> verify", () => {
     expect(joinResult.success).toBe(true);
     if (!joinResult.success) return;
 
-    await db
-      .update(ticketVerifications)
-      .set({ expiresAt: new Date(Date.now() - 1000) })
-      .where(eq(ticketVerifications.ticketId, joinResult.data.ticketId));
+    await expireVerificationLink(joinResult.data.ticketId);
 
     const token = await getVerificationToken(joinResult.data.ticketId);
     const result = await verifyTicket(token);
@@ -100,6 +97,56 @@ describe("join -> verify", () => {
     expect(result.success).toBe(false);
     if (result.success) return;
     expect(result.code).toBe("CONFLICT");
+
+    const [ticket] = await db
+      .select()
+      .from(tickets)
+      .where(eq(tickets.id, joinResult.data.ticketId));
+    expect(ticket?.status).toBe("expired");
+  });
+
+  test("lets a customer rejoin once their confirmation link has expired", async () => {
+    const email = testCustomerEmail("fay");
+    const first = await joinQueue(shop.slug, { name: "Fay", email });
+    expect(first.success).toBe(true);
+    if (!first.success) return;
+
+    await expireVerificationLink(first.data.ticketId);
+
+    const second = await joinQueue(shop.slug, { name: "Fay", email });
+    expect(second.success).toBe(true);
+    if (!second.success) return;
+
+    const [oldTicket] = await db
+      .select()
+      .from(tickets)
+      .where(eq(tickets.id, first.data.ticketId));
+    expect(oldTicket?.status).toBe("expired");
+    expect(oldTicket?.resolvedAt).not.toBeNull();
+
+    // The new ticket confirms normally.
+    const token = await getVerificationToken(second.data.ticketId);
+    const verifyResult = await verifyTicket(token);
+    expect(verifyResult.success).toBe(true);
+  });
+
+  test("an already-confirmed customer opening their old, expired link still sees their ticket", async () => {
+    const joinResult = await joinQueue(shop.slug, {
+      name: "Gus",
+      email: testCustomerEmail("gus"),
+    });
+    expect(joinResult.success).toBe(true);
+    if (!joinResult.success) return;
+
+    const token = await getVerificationToken(joinResult.data.ticketId);
+    expect((await verifyTicket(token)).success).toBe(true);
+
+    await expireVerificationLink(joinResult.data.ticketId);
+
+    const again = await verifyTicket(token);
+    expect(again.success).toBe(true);
+    if (!again.success) return;
+    expect(again.data.ticket.status).toBe("waiting");
   });
 
   test("verifying an already-verified ticket is idempotent", async () => {
@@ -121,3 +168,11 @@ describe("join -> verify", () => {
     expect(secondVerify.data.ticket.status).toBe("waiting");
   });
 });
+
+// Moves a ticket's confirmation link into the past, as if 15 minutes had gone by.
+async function expireVerificationLink(ticketId: string): Promise<void> {
+  await db
+    .update(ticketVerifications)
+    .set({ expiresAt: new Date(Date.now() - 1000) })
+    .where(eq(ticketVerifications.ticketId, ticketId));
+}

@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import { and, eq, inArray, max } from "drizzle-orm";
+import { and, eq, gt, inArray, max, notExists } from "drizzle-orm";
 import { db } from "@/db";
 import { queues, ticketVerifications, tickets } from "@/db/schema";
 import type {
@@ -65,6 +65,33 @@ export async function joinQueue(
           code: ErrorCode.CONFLICT,
         };
       }
+
+      // A ticket whose confirmation link has run out can never become
+      // "waiting", but it would still count as this email's one active
+      // ticket and block every rejoin for the rest of the day. Retire it as
+      // "expired" first, so "join the queue again" actually works.
+      const now = new Date();
+      await tx
+        .update(tickets)
+        .set({ status: "expired", resolvedAt: now })
+        .where(
+          and(
+            eq(tickets.queueId, queue.id),
+            eq(tickets.customerEmail, data.email),
+            eq(tickets.status, "pending_verification"),
+            notExists(
+              tx
+                .select({ id: ticketVerifications.id })
+                .from(ticketVerifications)
+                .where(
+                  and(
+                    eq(ticketVerifications.ticketId, tickets.id),
+                    gt(ticketVerifications.expiresAt, now),
+                  ),
+                ),
+            ),
+          ),
+        );
 
       const [existing] = await tx
         .select({ id: tickets.id })
