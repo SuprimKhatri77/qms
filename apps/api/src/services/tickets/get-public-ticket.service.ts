@@ -4,6 +4,7 @@ import { queues, shops, tickets } from "@/db/schema";
 import type { ApiErrorResponse, PublicTicketResponse } from "@repo/types";
 import { ErrorCode } from "@repo/types";
 import { logEvent } from "@/lib/system-logs/log-event";
+import { countWaitingAhead } from "@/services/queue/count-waiting-ahead";
 import { toPublicTicket } from "./map-ticket";
 
 // Polled every ~10s by the customer's ticket page. There's no session to
@@ -36,7 +37,7 @@ export async function getPublicTicket(
       data: {
         ticket: toPublicTicket(
           row.ticket,
-          row.queue,
+          await countWaitingAhead(row.ticket),
           row.shop.avgServiceMinutes,
         ),
         shop: { name: row.shop.name, slug: row.shop.slug },

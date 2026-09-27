@@ -1,28 +1,20 @@
 import type { PublicTicket } from "@repo/types";
-import type { queues, tickets } from "@/db/schema";
+import type { tickets } from "@/db/schema";
 import {
-  derivePosition,
   deriveEtaMinutes,
+  positionFor,
 } from "@/services/queue/ticket-position";
 
-// Terminal states: the ticket is no longer moving through the queue, so a
-// "turns away" position no longer means anything.
-const RESOLVED_STATUSES = new Set(["done", "no_show", "cancelled", "expired"]);
-
 // Converts a ticket row into what the customer's own status page shows.
-// `avgServiceMinutes` comes from the shop (tickets/queues don't carry it).
+// `waitingAhead` comes from countWaitingAhead, and `avgServiceMinutes` from
+// the shop (tickets don't carry it). Kept free of database calls, so it's a
+// plain mapping.
 export function toPublicTicket(
   ticket: typeof tickets.$inferSelect,
-  queue: typeof queues.$inferSelect,
+  waitingAhead: number,
   avgServiceMinutes: number,
 ): PublicTicket {
-  const showsPosition =
-    ticket.status !== "pending_verification" &&
-    !RESOLVED_STATUSES.has(ticket.status);
-
-  const position = showsPosition
-    ? derivePosition(ticket.tokenNumber, queue.currentServingNumber)
-    : null;
+  const position = positionFor(ticket.status, waitingAhead);
 
   return {
     id: ticket.id,

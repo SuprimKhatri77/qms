@@ -4,6 +4,7 @@ import { queues, shops, ticketVerifications, tickets } from "@/db/schema";
 import type { ApiErrorResponse, VerifyTicketResponse } from "@repo/types";
 import { ErrorCode } from "@repo/types";
 import { logEvent } from "@/lib/system-logs/log-event";
+import { countWaitingAhead } from "@/services/queue/count-waiting-ahead";
 import { toPublicTicket } from "./map-ticket";
 
 export async function verifyTicket(
@@ -73,7 +74,7 @@ export async function verifyTicket(
       data: {
         ticket: toPublicTicket(
           row.ticket,
-          row.queue,
+          await countWaitingAhead(row.ticket),
           row.shop.avgServiceMinutes,
         ),
       },
