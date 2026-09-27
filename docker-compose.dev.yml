@@ -9,12 +9,16 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     ports:
       - "5000:5000"
     env_file:
       - .env.local
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      # Inside Docker, Redis is reached by its service name, not localhost
+      REDIS_URL: redis://redis:6379
     volumes:
       - ./apps/api:/app/apps/api
       - ./packages:/app/packages
@@ -74,6 +78,22 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - pgdata:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+  # Rate-limit counters only. Nothing here needs to survive a restart (every
+  # key expires within an hour anyway), so there's no volume. No host port
+  # either: only the api container talks to it, over app-network, and not
+  # publishing 6379 avoids clashing with a Redis already running on the host.
+  # Inspect it with: docker exec -it qms-redis redis-cli
+  redis:
+    image: redis:7-alpine
+    container_name: qms-redis
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     networks:
       - app-network
 

@@ -9,6 +9,7 @@ describe("statusForErrorCode", () => {
     [ErrorCode.NOT_FOUND, 404],
     [ErrorCode.CONFLICT, 409],
     [ErrorCode.DUPLICATE_ENTRY, 409],
+    [ErrorCode.RATE_LIMITED, 429],
     [ErrorCode.INTERNAL_SERVER_ERROR, 500],
   ])("maps %s to %i", (code, status) => {
     expect(statusForErrorCode(code)).toBe(status);

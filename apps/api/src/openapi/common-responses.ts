@@ -28,6 +28,17 @@ export const conflict = errorResponse(
 export const duplicateEntry = errorResponse(
   "Already exists (DUPLICATE_ENTRY).",
 );
+export const tooManyRequests = {
+  ...errorResponse(
+    "Too many attempts from this email or IP in a short time (RATE_LIMITED). Wait and retry.",
+  ),
+  headers: {
+    "Retry-After": {
+      description: "Seconds until the limit resets.",
+      schema: { type: "integer" as const },
+    },
+  },
+};
 export const serverError = errorResponse(
   "Unexpected server error (INTERNAL_SERVER_ERROR).",
 );

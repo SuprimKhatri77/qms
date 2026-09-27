@@ -6,6 +6,7 @@ import {
   badRequest,
   duplicateEntry,
   serverError,
+  tooManyRequests,
   unauthorized,
 } from "../common-responses";
 
@@ -31,6 +32,7 @@ registry.registerPath({
     },
     400: badRequest,
     401: unauthorized,
+    429: tooManyRequests,
     500: serverError,
   },
 });
@@ -52,6 +54,7 @@ registry.registerPath({
     },
     400: badRequest,
     409: duplicateEntry,
+    429: tooManyRequests,
     500: serverError,
   },
 });
