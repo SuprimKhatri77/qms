@@ -68,6 +68,9 @@ export function ShopsPage() {
 
   const { shops } = data.data;
   const { meta } = data;
+  // An old bookmark or shared link can ask for a page that no longer
+  // exists. That's different from the platform having no shops at all.
+  const isPastLastPage = shops.length === 0 && meta.total > 0;
 
   return (
     <>
@@ -77,11 +80,29 @@ export function ShopsPage() {
         actions={isFetching && !isPending ? <Spinner /> : undefined}
       />
 
-      {shops.length === 0 ? (
+      {meta.total === 0 ? (
         <p className="border border-hairline p-6 text-sm text-ink-mute">
           No shops have been created yet.
         </p>
-      ) : (
+      ) : null}
+
+      {isPastLastPage ? (
+        <div className="border border-hairline p-6 text-sm">
+          <p className="text-ink-mute">
+            There&apos;s no page {page}. The list has {meta.totalPages}{" "}
+            {meta.totalPages === 1 ? "page" : "pages"}.
+          </p>
+          <Button
+            variant="outline"
+            className="mt-4"
+            onClick={() => goToPage(meta.totalPages)}
+          >
+            Go to the last page
+          </Button>
+        </div>
+      ) : null}
+
+      {shops.length > 0 ? (
         <>
           <div className="border border-hairline">
             <Table>
@@ -178,7 +199,7 @@ export function ShopsPage() {
             </div>
           </div>
         </>
-      )}
+      ) : null}
     </>
   );
 }
