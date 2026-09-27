@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
 import { mapFieldErrors } from "@/lib/map-field-errors";
 import { getRetryAfterSeconds } from "@/lib/rate-limit";
-import { useCountdown } from "@/hooks/use-countdown";
+import { useRetryCountdown } from "@/hooks/use-retry-countdown";
 import { RateLimitNotice } from "@/components/rate-limit-notice";
 import { PasswordInput } from "./password-input";
 import { useLogin } from "./hooks/mutations/useLogin";
@@ -20,7 +20,7 @@ export function LoginForm() {
   const [errors, setErrors] =
     useState<Partial<Record<keyof LoginRequest, string>>>();
   const login = useLogin();
-  const retryCountdown = useCountdown();
+  const retryCountdown = useRetryCountdown("rate-limit:login");
 
   function clearFieldError(field: keyof LoginRequest) {
     setErrors((prev) => {
@@ -52,7 +52,7 @@ export function LoginForm() {
 
         const retryAfter = getRetryAfterSeconds(error);
         if (retryAfter !== null) {
-          retryCountdown.start(retryAfter);
+          retryCountdown.start(retryAfter, value.email);
         }
       }
     },
@@ -140,22 +140,33 @@ export function LoginForm() {
         }}
       </form.Field>
 
-      <RateLimitNotice secondsLeft={retryCountdown.secondsLeft} />
+      <form.Subscribe selector={(state) => state.values.email}>
+        {(email) => {
+          // Only while the form is on the email that was blocked: another
+          // email may be allowed, so the server gets to decide.
+          const secondsLeft = retryCountdown.secondsLeftFor(email);
 
-      <Button
-        type="submit"
-        className="h-10 w-full"
-        disabled={login.isPending || retryCountdown.secondsLeft > 0}
-      >
-        {login.isPending ? (
-          <span className="inline-flex items-center gap-2">
-            <Spinner />
-            Signing in...
-          </span>
-        ) : (
-          "Sign in"
-        )}
-      </Button>
+          return (
+            <>
+              <RateLimitNotice secondsLeft={secondsLeft} />
+              <Button
+                type="submit"
+                className="h-10 w-full"
+                disabled={login.isPending || secondsLeft > 0}
+              >
+                {login.isPending ? (
+                  <span className="inline-flex items-center gap-2">
+                    <Spinner />
+                    Signing in...
+                  </span>
+                ) : (
+                  "Sign in"
+                )}
+              </Button>
+            </>
+          );
+        }}
+      </form.Subscribe>
 
       <p className="text-center text-xs text-ink-mute">
         Shop owner accounts only.{" "}

@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
 import { mapFieldErrors } from "@/lib/map-field-errors";
 import { getRetryAfterSeconds } from "@/lib/rate-limit";
-import { useCountdown } from "@/hooks/use-countdown";
+import { useRetryCountdown } from "@/hooks/use-retry-countdown";
 import { RateLimitNotice } from "@/components/rate-limit-notice";
 import { PasswordInput } from "./password-input";
 import { useSignup } from "./hooks/mutations/useSignup";
@@ -24,7 +24,7 @@ export function SignupForm() {
   const [errors, setErrors] =
     useState<Partial<Record<keyof SignupFormValues, string>>>();
   const signup = useSignup();
-  const retryCountdown = useCountdown();
+  const retryCountdown = useRetryCountdown("rate-limit:signup");
 
   function clearFieldError(field: keyof SignupFormValues) {
     setErrors((prev) => {
@@ -47,9 +47,15 @@ export function SignupForm() {
     },
     onSubmit: async ({ value }) => {
       setErrors(undefined);
-      const { confirmPassword: _, ...payload } = value;
+      // confirmPassword only exists to check the two match in the form;
+      // the API takes just these three fields.
+      const payload: SignupRequest = {
+        name: value.name,
+        email: value.email,
+        password: value.password,
+      };
       try {
-        await signup.mutateAsync(payload satisfies SignupRequest);
+        await signup.mutateAsync(payload);
       } catch (err) {
         const error = err as AxiosError<ApiErrorResponse>;
         const data = error.response?.data;
@@ -59,7 +65,7 @@ export function SignupForm() {
 
         const retryAfter = getRetryAfterSeconds(error);
         if (retryAfter !== null) {
-          retryCountdown.start(retryAfter);
+          retryCountdown.start(retryAfter, value.email);
         }
       }
     },
@@ -232,22 +238,33 @@ export function SignupForm() {
       </div>
 
       <div className="flex flex-col gap-4 pt-1">
-        <RateLimitNotice secondsLeft={retryCountdown.secondsLeft} />
+        <form.Subscribe selector={(state) => state.values.email}>
+          {(email) => {
+            // Only while the form is on the email that was blocked: another
+            // email may be allowed, so the server gets to decide.
+            const secondsLeft = retryCountdown.secondsLeftFor(email);
 
-        <Button
-          type="submit"
-          className="h-11 w-full text-sm"
-          disabled={signup.isPending || retryCountdown.secondsLeft > 0}
-        >
-          {signup.isPending ? (
-            <span className="inline-flex items-center gap-2">
-              <Spinner />
-              Creating account...
-            </span>
-          ) : (
-            "Create shop account"
-          )}
-        </Button>
+            return (
+              <>
+                <RateLimitNotice secondsLeft={secondsLeft} />
+                <Button
+                  type="submit"
+                  className="h-11 w-full text-sm"
+                  disabled={signup.isPending || secondsLeft > 0}
+                >
+                  {signup.isPending ? (
+                    <span className="inline-flex items-center gap-2">
+                      <Spinner />
+                      Creating account...
+                    </span>
+                  ) : (
+                    "Create shop account"
+                  )}
+                </Button>
+              </>
+            );
+          }}
+        </form.Subscribe>
         <p className="text-center text-[13px] leading-relaxed text-ink-mute">
           This account is for managing a shop queue. Customers join without
           signing up. You can add your shop details after signup.

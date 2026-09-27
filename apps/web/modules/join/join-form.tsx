@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
 import { useJoinQueue } from "./hooks/mutations/useJoinQueue";
 import { getRetryAfterSeconds } from "@/lib/rate-limit";
-import { useCountdown } from "@/hooks/use-countdown";
+import { useRetryCountdown } from "@/hooks/use-retry-countdown";
 import { RateLimitNotice } from "@/components/rate-limit-notice";
 
 const inputClassName =
@@ -44,7 +44,7 @@ const EMPTY_VALUES: JoinQueueRequest = { name: "", email: "", phone: "" };
 
 export function JoinForm({ slug }: { slug: string }) {
   const joinQueue = useJoinQueue(slug);
-  const retryCountdown = useCountdown();
+  const retryCountdown = useRetryCountdown(`rate-limit:join:${slug}`);
 
   const form = useForm({
     defaultValues: EMPTY_VALUES,
@@ -58,7 +58,7 @@ export function JoinForm({ slug }: { slug: string }) {
           err as AxiosError<ApiErrorResponse>,
         );
         if (retryAfter !== null) {
-          retryCountdown.start(retryAfter);
+          retryCountdown.start(retryAfter, value.email);
         }
       }
     },
@@ -142,22 +142,33 @@ export function JoinForm({ slug }: { slug: string }) {
         }}
       </form.Field>
 
-      <RateLimitNotice secondsLeft={retryCountdown.secondsLeft} />
+      <form.Subscribe selector={(state) => state.values.email}>
+        {(email) => {
+          // Only while the form is on the email that was blocked: another
+          // email may be allowed, so the server gets to decide.
+          const secondsLeft = retryCountdown.secondsLeftFor(email);
 
-      <Button
-        type="submit"
-        className="h-10 w-full"
-        disabled={joinQueue.isPending || retryCountdown.secondsLeft > 0}
-      >
-        {joinQueue.isPending ? (
-          <span className="inline-flex items-center gap-2">
-            <Spinner />
-            Joining...
-          </span>
-        ) : (
-          "Join the queue"
-        )}
-      </Button>
+          return (
+            <>
+              <RateLimitNotice secondsLeft={secondsLeft} />
+              <Button
+                type="submit"
+                className="h-10 w-full"
+                disabled={joinQueue.isPending || secondsLeft > 0}
+              >
+                {joinQueue.isPending ? (
+                  <span className="inline-flex items-center gap-2">
+                    <Spinner />
+                    Joining...
+                  </span>
+                ) : (
+                  "Join the queue"
+                )}
+              </Button>
+            </>
+          );
+        }}
+      </form.Subscribe>
 
       <p className="text-center text-xs text-ink-mute">
         We&apos;ll email you a link to confirm your spot. No account, no app.
