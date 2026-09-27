@@ -29,6 +29,13 @@
       "when": 1789805346530,
       "tag": "0003_aromatic_molten_man",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790520853638,
+      "tag": "0004_early_shadow_king",
+      "breakpoints": true
     }
   ]
 }

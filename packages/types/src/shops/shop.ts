@@ -96,11 +96,13 @@ export const createShopSchema = z
       .min(1, { error: "Average service time must be at least 1 minute" })
       .max(180, { error: "Average service time must be at most 180 minutes" }),
     // How long after opening a day's queue stays open before it auto-closes.
+    // At most 24: a queue always ends with its day anyway (see
+    // expire-finished-queues.service.ts), so a longer value could never apply.
     queueExpiryHours: z
       .number({ error: "Queue expiry must be a number" })
       .int({ error: "Queue expiry must be a whole number" })
       .min(1, { error: "Queue expiry must be at least 1 hour" })
-      .max(48, { error: "Queue expiry must be at most 48 hours" }),
+      .max(24, { error: "Queue expiry must be at most 24 hours" }),
   })
   .refine((data) => (data.lat === undefined) === (data.lng === undefined), {
     error: "Pick a location on the map, or leave it blank",

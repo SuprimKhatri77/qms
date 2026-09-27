@@ -98,11 +98,19 @@ describe("createShopSchema", () => {
     expect(result.success).toBe(false);
   });
 
-  test("rejects queueExpiryHours above 48", () => {
+  test("rejects queueExpiryHours above 24", () => {
     const result = createShopSchema.safeParse({
       ...validShop,
-      queueExpiryHours: 49,
+      queueExpiryHours: 25,
     });
     expect(result.success).toBe(false);
+  });
+
+  test("accepts queueExpiryHours of exactly 24", () => {
+    const result = createShopSchema.safeParse({
+      ...validShop,
+      queueExpiryHours: 24,
+    });
+    expect(result.success).toBe(true);
   });
 });

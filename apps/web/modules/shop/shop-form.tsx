@@ -365,14 +365,14 @@ export function ShopForm({
                 id="shop-expiry-hours"
                 label="Queue open for (hours)"
                 error={error}
-                hint="Each day's queue closes after this long."
+                hint="Counted from the day's first customer or your first visit to the dashboard. The queue also always closes at midnight."
               >
                 <Input
                   id="shop-expiry-hours"
                   name="queueExpiryHours"
                   type="number"
                   min={1}
-                  max={48}
+                  max={24}
                   required
                   value={numberToInputValue(field.state.value)}
                   onBlur={field.handleBlur}
