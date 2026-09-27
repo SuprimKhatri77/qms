@@ -126,6 +126,23 @@ export function HistoryPage() {
             Try again
           </Button>
         </div>
+      ) : data.data.days.length === 0 && data.meta.total > 0 ? (
+        // An old bookmark or shared link asked for a page past the end.
+        // That isn't the same as having no history, so say so and offer a
+        // way back (the date filters are kept).
+        <div className="border border-hairline p-6 text-sm">
+          <p className="text-ink-mute">
+            There&apos;s no page {page}. The list has {data.meta.totalPages}{" "}
+            {data.meta.totalPages === 1 ? "page" : "pages"}.
+          </p>
+          <Button
+            variant="outline"
+            className="mt-4"
+            onClick={() => updateUrl({ page: data.meta.totalPages })}
+          >
+            Go to the last page
+          </Button>
+        </div>
       ) : data.data.days.length === 0 ? (
         <p className="border border-hairline p-6 text-sm text-ink-mute">
           {hasFilter
