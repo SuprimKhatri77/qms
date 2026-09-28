@@ -25,10 +25,13 @@ registry.registerPath({
   request: { params: slugParam },
   responses: {
     200: {
-      description: "The shop.",
+      description:
+        "The shop, and whether today's queue is open to new customers.",
       content: {
         "application/json": {
-          schema: apiSuccessSchema(z.object({ shop: shopSchema })),
+          schema: apiSuccessSchema(
+            z.object({ shop: shopSchema, queueOpen: z.boolean() }),
+          ),
         },
       },
     },

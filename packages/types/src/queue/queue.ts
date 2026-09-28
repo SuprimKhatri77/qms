@@ -1,3 +1,4 @@
+import { z } from "zod";
 import type { ApiSuccessResponse } from "../base";
 
 // Must stay in sync with `ticketStatusEnum` in apps/api/src/db/schemas/enums.ts.
@@ -10,7 +11,18 @@ export type TicketStatus =
   | "cancelled"
   | "expired";
 
-export type QueueStatus = "active" | "closed";
+// Must stay in sync with `queueStatusEnum` in apps/api/src/db/schemas/enums.ts.
+// "closed" only stops new customers joining; the owner can still serve
+// everyone already in line.
+export const QUEUE_STATUSES = ["active", "closed"] as const;
+export type QueueStatus = (typeof QUEUE_STATUSES)[number];
+
+// Body of PUT /shops/me/queue/status: the owner opening or closing today's queue.
+export const updateQueueStatusSchema = z.object({
+  status: z.enum(QUEUE_STATUSES, { error: "Invalid status" }),
+});
+
+export type UpdateQueueStatusRequest = z.infer<typeof updateQueueStatusSchema>;
 
 // A customer's ticket as the shop owner sees it. The customer's email is
 // deliberately not included: the dashboard doesn't need it.

@@ -10,13 +10,13 @@ export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
   const { shopSlug } = await params;
-  const shop = await getPublicShopFromApi(shopSlug);
+  const { shop } = await getPublicShopFromApi(shopSlug);
   return { title: `Join the queue at ${shop.name}` };
 }
 
 export default async function Page({ params }: PageProps) {
   const { shopSlug } = await params;
-  const shop = await getPublicShopFromApi(shopSlug);
+  const { shop, queueOpen } = await getPublicShopFromApi(shopSlug);
 
-  return <JoinPage shop={shop} />;
+  return <JoinPage shop={shop} queueOpen={queueOpen} />;
 }

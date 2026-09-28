@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { useShopQueue } from "./hooks/queries/useShopQueue";
 import { NowServingCard } from "./now-serving-card";
+import { QueueStatusBar } from "./queue-status-bar";
 import { WaitingList } from "./waiting-list";
 
 type StatProps = {
@@ -53,9 +54,13 @@ export function QueueBoard() {
 
   return (
     <div className="space-y-6">
-      <p className="text-xs text-ink-mute">Queue for {queue.date}</p>
+      <QueueStatusBar queue={queue} />
 
-      <NowServingCard serving={serving} hasWaiting={waiting.length > 0} />
+      <NowServingCard
+        serving={serving}
+        hasWaiting={waiting.length > 0}
+        isClosed={queue.status === "closed"}
+      />
 
       <div className="grid grid-cols-3 gap-3">
         <Stat label="Waiting" value={waiting.length} />

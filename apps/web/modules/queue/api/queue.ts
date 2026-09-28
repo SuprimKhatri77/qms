@@ -1,10 +1,19 @@
 import api from "@/lib/axios";
-import { QueueSnapshotResponse } from "@repo/types";
+import { QueueSnapshotResponse, QueueStatus } from "@repo/types";
 
 // Every queue endpoint answers with the full, fresh snapshot of today's queue.
 
 export const getShopQueue = async (): Promise<QueueSnapshotResponse> => {
   const res = await api.get<QueueSnapshotResponse>("/shops/me/queue");
+  return res.data;
+};
+
+export const setQueueStatus = async (
+  status: QueueStatus,
+): Promise<QueueSnapshotResponse> => {
+  const res = await api.put<QueueSnapshotResponse>("/shops/me/queue/status", {
+    status,
+  });
   return res.data;
 };
 
