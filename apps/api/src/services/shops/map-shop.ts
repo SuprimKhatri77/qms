@@ -19,7 +19,8 @@ export function toApiShop(shop: typeof shops.$inferSelect): Shop {
     lng: shop.lng,
     timezone: shop.timezone,
     avgServiceMinutes: shop.avgServiceMinutes,
-    queueExpiryHours: shop.queueExpiryHours,
+    // Postgres returns "19:00:00"; the app only deals in minutes.
+    closingTime: shop.closingTime ? shop.closingTime.slice(0, 5) : null,
     createdAt: shop.createdAt.toISOString(),
     updatedAt: shop.updatedAt.toISOString(),
   };

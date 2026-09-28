@@ -8,7 +8,6 @@ const validShop = {
   category: "barber",
   city: "Kathmandu",
   avgServiceMinutes: 15,
-  queueExpiryHours: 12,
 };
 
 describe("createShopSchema", () => {
@@ -98,11 +97,31 @@ describe("createShopSchema", () => {
     expect(result.success).toBe(false);
   });
 
-  test("rejects queueExpiryHours above 48", () => {
+  test("accepts a closing time like 19:00", () => {
     const result = createShopSchema.safeParse({
       ...validShop,
-      queueExpiryHours: 49,
+      closingTime: "19:00",
     });
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.data.closingTime).toBe("19:00");
+  });
+
+  test("an empty closing time means none (open until midnight)", () => {
+    const result = createShopSchema.safeParse({
+      ...validShop,
+      closingTime: "",
+    });
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.data.closingTime).toBeUndefined();
+  });
+
+  test("rejects closing times that aren't HH:MM", () => {
+    for (const closingTime of ["7pm", "24:00", "19:60", "9:00"]) {
+      expect(
+        createShopSchema.safeParse({ ...validShop, closingTime }).success,
+      ).toBe(false);
+    }
   });
 });

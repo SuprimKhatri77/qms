@@ -23,6 +23,11 @@ export const queues = pgTable(
       .notNull()
       .default(0),
     status: queueStatusEnum("status").notNull().default("active"),
+    // Set once by the expiry sweeper (see expire-finished-queues.service.ts)
+    // when the queue's hours run out or its day ends. Null means it hasn't
+    // expired yet. It also stops the sweeper closing the queue again if the
+    // owner deliberately reopens it afterwards.
+    expiredAt: timestamp("expired_at"),
 
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },

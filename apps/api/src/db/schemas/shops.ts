@@ -6,6 +6,7 @@ import {
   uuid,
   integer,
   doublePrecision,
+  time,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { users } from "./auth";
@@ -41,7 +42,8 @@ export const shops = pgTable(
 
     // queue behavior config, owner-controlled
     avgServiceMinutes: integer("avg_service_minutes").notNull().default(10),
-    queueExpiryHours: integer("queue_expiry_hours").notNull().default(24),
+    // Shop-local closing time. Null means the queue only closes at midnight.
+    closingTime: time("closing_time"),
 
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at")

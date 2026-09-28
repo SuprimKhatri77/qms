@@ -73,7 +73,7 @@ export const EMPTY_SHOP_VALUES: CreateShopFormValues = {
   email: "",
   phone: "",
   avgServiceMinutes: 10,
-  queueExpiryHours: 24,
+  closingTime: "",
 };
 
 type ShopFormProps = {
@@ -357,31 +357,26 @@ export function ShopForm({
           }}
         </form.Field>
 
-        <form.Field name="queueExpiryHours">
+        <form.Field name="closingTime">
           {(field) => {
             const error = field.state.meta.errors[0]?.message;
             return (
               <FieldShell
-                id="shop-expiry-hours"
-                label="Queue open for (hours)"
+                id="shop-closing-time"
+                label="Closes at (optional)"
                 error={error}
-                hint="Each day's queue closes after this long."
+                hint="New customers can't join after this time, and anyone still waiting is told the queue has closed. Leave it empty to stay open until midnight."
               >
                 <Input
-                  id="shop-expiry-hours"
-                  name="queueExpiryHours"
-                  type="number"
-                  min={1}
-                  max={48}
-                  required
-                  value={numberToInputValue(field.state.value)}
+                  id="shop-closing-time"
+                  name="closingTime"
+                  type="time"
+                  value={field.state.value ?? ""}
                   onBlur={field.handleBlur}
-                  onChange={(event) =>
-                    field.handleChange(event.target.valueAsNumber)
-                  }
+                  onChange={(event) => field.handleChange(event.target.value)}
                   aria-invalid={error ? true : undefined}
                   aria-describedby={
-                    error ? "shop-expiry-hours-error" : undefined
+                    error ? "shop-closing-time-error" : undefined
                   }
                   className={inputClassName}
                 />

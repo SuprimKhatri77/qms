@@ -8,6 +8,10 @@ import { buildOpenApiDocument } from "./openapi/document";
 import { rateLimit } from "./middlewares/rate-limit";
 import { requireCanonicalPath } from "./middlewares/require-canonical-path";
 import {
+  EXPIRY_SWEEP_INTERVAL_MS,
+  runExpirySweep,
+} from "./services/queue/expire-finished-queues.service";
+import {
   authEmailRules,
   loginRules,
   signupRules,
@@ -78,3 +82,8 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
+
+// Closes queues whose hours are up or whose day has ended, and expires the
+// tickets left in them. Once now, to catch up after downtime, then on a timer.
+void runExpirySweep();
+setInterval(() => void runExpirySweep(), EXPIRY_SWEEP_INTERVAL_MS);

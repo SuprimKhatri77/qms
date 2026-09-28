@@ -29,6 +29,20 @@
       "when": 1789805346530,
       "tag": "0003_aromatic_molten_man",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790520853638,
+      "tag": "0004_early_shadow_king",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790523489850,
+      "tag": "0005_curly_eddie_brock",
+      "breakpoints": true
     }
   ]
 }

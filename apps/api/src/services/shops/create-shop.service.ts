@@ -57,7 +57,7 @@ export async function createShop(
           lat: data.lat ?? null,
           lng: data.lng ?? null,
           avgServiceMinutes: data.avgServiceMinutes,
-          queueExpiryHours: data.queueExpiryHours,
+          closingTime: data.closingTime ?? null,
         })
         .onConflictDoNothing({ target: shops.slug })
         .returning();

@@ -27,7 +27,7 @@ export function SettingsPage() {
     lat: shop.lat ?? undefined,
     lng: shop.lng ?? undefined,
     avgServiceMinutes: shop.avgServiceMinutes,
-    queueExpiryHours: shop.queueExpiryHours,
+    closingTime: shop.closingTime ?? "",
   };
 
   return (
