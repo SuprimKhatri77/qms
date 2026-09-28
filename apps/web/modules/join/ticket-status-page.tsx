@@ -40,14 +40,6 @@ const STATUS_COPY: Partial<
   },
 };
 
-// Position 1 means "next", so the number of people waiting in front is one
-// less than the position.
-function peopleAheadText(peopleAhead: number): string {
-  return peopleAhead === 1
-    ? "1 person ahead of you"
-    : `${peopleAhead} people ahead of you`;
-}
-
 export function TicketStatusPage({
   ticketId,
   initialData,
@@ -96,4 +88,12 @@ export function TicketStatusPage({
       </div>
     </div>
   );
+}
+
+// Position 1 means "next", so the number of people waiting in front is one
+// less than the position.
+function peopleAheadText(peopleAhead: number): string {
+  return peopleAhead === 1
+    ? "1 person ahead of you"
+    : `${peopleAhead} people ahead of you`;
 }
