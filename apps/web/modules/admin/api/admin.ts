@@ -8,8 +8,15 @@ import type {
   LogLevel,
 } from "@repo/types";
 
-export const listAdminShops = async (): Promise<AdminShopListResponse> => {
-  const res = await api.get<AdminShopListResponse>("/admin/shops");
+export const ADMIN_SHOPS_PAGE_SIZE = 20;
+export const ADMIN_LOGS_PAGE_SIZE = 50;
+
+export const listAdminShops = async (
+  page: number,
+): Promise<AdminShopListResponse> => {
+  const res = await api.get<AdminShopListResponse>("/admin/shops", {
+    params: { page, limit: ADMIN_SHOPS_PAGE_SIZE },
+  });
   return res.data;
 };
 
@@ -35,11 +42,17 @@ export const getPlatformAnalytics = async (
   return res.data;
 };
 
-export const listSystemLogs = async (
-  level: LogLevel | undefined,
-): Promise<SystemLogListResponse> => {
+export type ListSystemLogsParams = {
+  level: LogLevel | undefined;
+  page: number;
+};
+
+export const listSystemLogs = async ({
+  level,
+  page,
+}: ListSystemLogsParams): Promise<SystemLogListResponse> => {
   const res = await api.get<SystemLogListResponse>("/admin/logs", {
-    params: level ? { level } : undefined,
+    params: { level, page, limit: ADMIN_LOGS_PAGE_SIZE },
   });
   return res.data;
 };

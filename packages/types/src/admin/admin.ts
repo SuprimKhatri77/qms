@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { ApiSuccessResponse } from "../base";
+import type { PaginationMeta } from "../common";
 import type { Analytics, AnalyticsSummary } from "../analytics/analytics";
 import { SHOP_STATUSES, type ShopStatus } from "../shops/shop";
 
@@ -19,9 +20,17 @@ export type AdminShopSummary = {
   createdAt: string;
 };
 
-export type AdminShopListResponse = ApiSuccessResponse<{
-  shops: AdminShopSummary[];
-}>;
+export const adminShopsQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+});
+
+export type AdminShopsQuery = z.output<typeof adminShopsQuerySchema>;
+
+export type AdminShopListResponse = ApiSuccessResponse<
+  { shops: AdminShopSummary[] },
+  PaginationMeta
+>;
 
 export const updateShopStatusSchema = z.object({
   status: z.enum(SHOP_STATUSES, { error: "Invalid status" }),
@@ -68,9 +77,13 @@ export type SystemLog = {
 
 export const systemLogsQuerySchema = z.object({
   level: z.enum(LOG_LEVELS).optional(),
+  page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(200).default(50),
 });
 
 export type SystemLogsQuery = z.output<typeof systemLogsQuerySchema>;
 
-export type SystemLogListResponse = ApiSuccessResponse<{ logs: SystemLog[] }>;
+export type SystemLogListResponse = ApiSuccessResponse<
+  { logs: SystemLog[] },
+  PaginationMeta
+>;

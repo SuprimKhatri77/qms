@@ -1,5 +1,6 @@
 import { z } from "zod";
 import {
+  adminShopsQuerySchema,
   analyticsQuerySchema,
   systemLogsQuerySchema,
   updateShopStatusSchema,
@@ -8,6 +9,7 @@ import { registry, SESSION_COOKIE_AUTH } from "../registry";
 import {
   adminShopSummarySchema,
   apiSuccessSchema,
+  paginationMetaSchema,
   platformAnalyticsSchema,
   systemLogSchema,
 } from "../schemas";
@@ -29,19 +31,23 @@ registry.registerPath({
   path: "/api/v1/admin/shops",
   tags: ["Admin"],
   summary: "List every shop on the platform",
-  description: "Newest first, with owner info and a lifetime ticket count.",
+  description:
+    "A page of shops, newest first, with owner info and a lifetime ticket count.",
   security: adminSecurity,
+  request: { query: adminShopsQuerySchema },
   responses: {
     200: {
-      description: "Every shop.",
+      description: "A page of shops.",
       content: {
         "application/json": {
           schema: apiSuccessSchema(
             z.object({ shops: z.array(adminShopSummarySchema) }),
+            paginationMetaSchema,
           ),
         },
       },
     },
+    400: badRequest,
     401: unauthorized,
     403: forbidden,
     500: serverError,
@@ -125,6 +131,7 @@ registry.registerPath({
         "application/json": {
           schema: apiSuccessSchema(
             z.object({ logs: z.array(systemLogSchema) }),
+            paginationMetaSchema,
           ),
         },
       },
