@@ -41,9 +41,10 @@ export type PublicTicket = {
   tokenNumber: number;
   customerName: string;
   status: TicketStatus;
-  // Turns until it's this ticket's turn: 0 once serving, 1 = next, 2 = two
-  // away, and so on. Always derived fresh from the queue's counter, never
-  // stored — null once the ticket has reached a resolved/terminal state.
+  // Place in line: 0 once serving, 1 = next, 2 = one person waiting ahead,
+  // and so on. Counts only customers still waiting (expired, cancelled and
+  // unconfirmed tickets are skipped). Always derived fresh on read, never
+  // stored; null when the ticket isn't in line (unconfirmed or finished).
   position: number | null;
   etaMinutes: number | null;
   createdAt: string;

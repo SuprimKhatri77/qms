@@ -1,14 +1,26 @@
-// A ticket's position is never stored: it's the gap between its own token and
-// the queue's single counter, computed fresh on every read. 0 means it's this
-// ticket's turn right now; 1 means next; 2 means two away, and so on.
+import type { TicketStatus } from "@repo/types";
+
+// A ticket's position is never stored. It's worked out fresh on every read
+// from how many people are still waiting in front of it (see
+// count-waiting-ahead.ts), so tickets that expired, were cancelled or were
+// never confirmed don't count as people.
 //
-// Shared by the owner dashboard and the customer-facing ticket page, so there
-// is exactly one place that does this subtraction.
-export function derivePosition(
-  tokenNumber: number,
-  currentServingNumber: number,
-): number {
-  return Math.max(0, tokenNumber - currentServingNumber);
+//   serving  -> 0  (it's this ticket's turn)
+//   waiting  -> 1 + people waiting ahead (1 = "you're next")
+//   anything else -> null (not in line, so no position)
+//
+// "Call next" never touches this: it stays one UPDATE of the queue's counter.
+export function positionFor(
+  status: TicketStatus,
+  waitingAhead: number,
+): number | null {
+  if (status === "serving") {
+    return 0;
+  }
+  if (status === "waiting") {
+    return waitingAhead + 1;
+  }
+  return null;
 }
 
 // A rough estimate only: it assumes every ticket ahead takes the shop's
