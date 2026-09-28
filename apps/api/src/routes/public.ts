@@ -2,11 +2,12 @@ import { Router } from "express";
 import { joinQueueSchema, verifyTicketSchema } from "@repo/types";
 import { validate } from "@/middlewares/validate";
 import { rateLimit } from "@/middlewares/rate-limit";
-import { joinRules, verifyRules } from "@/lib/rate-limit/rules";
+import { cancelRules, joinRules, verifyRules } from "@/lib/rate-limit/rules";
 import { getPublicShopController } from "@/controllers/tickets/get-public-shop.controller";
 import { joinQueueController } from "@/controllers/tickets/join-queue.controller";
 import { verifyTicketController } from "@/controllers/tickets/verify-ticket.controller";
 import { getPublicTicketController } from "@/controllers/tickets/get-public-ticket.controller";
+import { cancelTicketController } from "@/controllers/tickets/cancel-ticket.controller";
 
 // Everything here is reachable with no session: customers never have
 // accounts. Kept in its own router (not nested under /shops, which is
@@ -28,5 +29,10 @@ publicRoutes.post(
   verifyTicketController,
 );
 publicRoutes.get("/tickets/:ticketId", getPublicTicketController);
+publicRoutes.post(
+  "/tickets/:ticketId/cancel",
+  rateLimit(cancelRules),
+  cancelTicketController,
+);
 
 export { publicRoutes };

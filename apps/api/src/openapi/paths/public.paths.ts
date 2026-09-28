@@ -121,3 +121,33 @@ registry.registerPath({
     500: serverError,
   },
 });
+
+registry.registerPath({
+  method: "post",
+  path: "/api/v1/public/tickets/{ticketId}/cancel",
+  tags: ["Public"],
+  summary: "Leave the queue",
+  description:
+    "The customer cancels their own ticket from its status page. Only works while the ticket is pending_verification or waiting; CONFLICT once it's being served or finished. Like viewing the ticket, the hard-to-guess ticket id is the access control. Nobody else's position changes: call-next just skips the cancelled token.",
+  request: { params: ticketIdParam },
+  responses: {
+    200: {
+      description: "The ticket, now cancelled, and its shop's name/slug.",
+      content: {
+        "application/json": {
+          schema: apiSuccessSchema(
+            z.object({
+              ticket: publicTicketSchema,
+              shop: z.object({ name: z.string(), slug: z.string() }),
+            }),
+          ),
+        },
+      },
+    },
+    400: badRequest,
+    404: notFound,
+    409: conflict,
+    429: tooManyRequests,
+    500: serverError,
+  },
+});

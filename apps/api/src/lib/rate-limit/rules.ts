@@ -139,3 +139,15 @@ export const verifyRules: RateLimitRule[] = [
     identify: clientIp,
   },
 ];
+
+// Leaving the queue. Ticket ids are random UUIDs, so guessing someone
+// else's is already infeasible. Like verifyRules, this only stops anyone
+// hammering the endpoint.
+export const cancelRules: RateLimitRule[] = [
+  {
+    name: "cancel-ip",
+    limit: 30,
+    windowSeconds: 10 * MINUTE,
+    identify: clientIp,
+  },
+];
