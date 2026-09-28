@@ -22,7 +22,7 @@ const columns = [
   {
     title: "Customers",
     links: [
-      { href: "/#how-it-works", label: "Join a queue" },
+      { href: "/explore", label: "Find a shop" },
       { href: "/#features", label: "Track your spot" },
     ],
   },

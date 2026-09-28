@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+  formatDistance,
   formatCountdown,
   formatDateTime,
   formatHour,
@@ -94,5 +95,21 @@ describe("formatCountdown", () => {
     expect(formatCountdown(60)).toBe("1:00");
     expect(formatCountdown(65)).toBe("1:05");
     expect(formatCountdown(899)).toBe("14:59");
+  });
+});
+
+describe("formatDistance", () => {
+  test("shows metres under a kilometre, rounded to 10 m", () => {
+    expect(formatDistance(0.853)).toBe("850 m away");
+    expect(formatDistance(0.004)).toBe("0 m away");
+  });
+
+  test("shows kilometres with one decimal from 1 km up", () => {
+    expect(formatDistance(1)).toBe("1.0 km away");
+    expect(formatDistance(12.345)).toBe("12.3 km away");
+  });
+
+  test("995 m rounds up to kilometres, not '1000 m'", () => {
+    expect(formatDistance(0.996)).toBe("1.0 km away");
   });
 });
