@@ -1,9 +1,16 @@
 import { z } from "zod";
-import { loginSchema, signupSchema, userSchema } from "@repo/types";
+import {
+  forgotPasswordSchema,
+  loginSchema,
+  resetPasswordSchema,
+  signupSchema,
+  userSchema,
+} from "@repo/types";
 import { registry, SESSION_COOKIE_AUTH } from "../registry";
 import { apiSuccessSchema } from "../schemas";
 import {
   badRequest,
+  errorResponse,
   duplicateEntry,
   serverError,
   tooManyRequests,
@@ -12,7 +19,8 @@ import {
 
 const userEnvelope = apiSuccessSchema(z.object({ user: userSchema }));
 
-const logoutResponseSchema = z.object({
+// Logout, forgot-password and reset-password answer with just a message.
+const messageResponseSchema = z.object({
   success: z.literal(true),
   message: z.string(),
 });
@@ -67,7 +75,7 @@ registry.registerPath({
   responses: {
     200: {
       description: "Signed out. Clears the session cookie.",
-      content: { "application/json": { schema: logoutResponseSchema } },
+      content: { "application/json": { schema: messageResponseSchema } },
     },
     500: serverError,
   },
@@ -85,5 +93,53 @@ registry.registerPath({
       content: { "application/json": { schema: userEnvelope } },
     },
     401: unauthorized,
+  },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/api/v1/auth/forgot-password",
+  tags: ["Auth"],
+  summary: "Email a password-reset link",
+  description:
+    "Always answers 200 with the same message, whether or not the email has an account, so this endpoint doesn't reveal who is signed up. If it does, the owner gets a link to /auth/reset-password?token=… on the web app, valid for 15 minutes. Shares its rate limit with Better Auth's own /api/auth/request-password-reset.",
+  request: {
+    body: {
+      content: { "application/json": { schema: forgotPasswordSchema } },
+    },
+  },
+  responses: {
+    200: {
+      description: "Reset link sent, if the account exists.",
+      content: { "application/json": { schema: messageResponseSchema } },
+    },
+    400: badRequest,
+    429: tooManyRequests,
+    500: serverError,
+  },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/api/v1/auth/reset-password",
+  tags: ["Auth"],
+  summary: "Set a new password from a reset link",
+  description:
+    "The token from the emailed link works once. An unknown, used or expired token fails with 400 INVALID_TOKEN. On success the account's other outstanding reset links stop working, every existing session is signed out, and no new one is started: the owner logs in with the new password.",
+  request: {
+    body: {
+      content: { "application/json": { schema: resetPasswordSchema } },
+    },
+  },
+  responses: {
+    200: {
+      description: "Password changed; all sessions signed out.",
+      content: { "application/json": { schema: messageResponseSchema } },
+    },
+    400: errorResponse(
+      "Validation failed (VALIDATION_FAILED), or the link's token is unknown, used or expired (INVALID_TOKEN).",
+    ),
+    429: tooManyRequests,
+    500: serverError,
   },
 });

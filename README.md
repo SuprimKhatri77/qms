@@ -1,5 +1,7 @@
 # QMS
 
+[![CI](https://github.com/SuprimKhatri77/qms/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/SuprimKhatri77/qms/actions/workflows/ci.yml)
+
 **Queue Management System** — 4th-semester project (Nepal).
 
 ## About
@@ -12,7 +14,7 @@
 
 ## Features
 
-- **Shop owners** — sign up, set up a shop, open/close today's queue, call the next customer, mark a ticket done or no-show, and view analytics (wait times, no-show rate, daily/hourly load).
+- **Shop owners** — sign up, set up a shop, open/close today's queue, call the next customer, mark a ticket done or no-show, remove a waiting customer who leaves, and view analytics (wait times, no-show rate, daily/hourly load).
 - **Customers** — no account needed. Scan the shop's QR code, join with a name and email, and track their live position on a public status page.
 - **Turn-alert emails** — customers within striking distance of being called get an automatic email, sent the moment `call next` moves the queue forward.
 - **Superadmin panel** — a platform-wide view for admin/superadmin accounts: list every shop and suspend/reactivate one, cross-shop analytics, and a system log of things like failed emails or unexpected errors.
@@ -199,6 +201,7 @@ Copy [`.env.example`](.env.example) → `.env.local` at the repo root (used by C
 
 - **Husky** — pre-commit runs lint-staged (Prettier); pre-push runs typecheck + build
 - **Turbo** — task orchestration and caching
+- **GitHub Actions** — on every PR and push to `main`, [CI](.github/workflows/ci.yml) runs typecheck, lint, unit tests, migrations + integration tests against a fresh Postgres and Redis, and a full build
 - **TypeScript** everywhere
 
 ## License

@@ -14,6 +14,7 @@ import {
 import {
   authEmailRules,
   loginRules,
+  resetPasswordRules,
   signupRules,
 } from "./lib/rate-limit/rules";
 
@@ -58,6 +59,15 @@ app.post(
   parseAuthBody,
   rateLimit(authEmailRules),
 );
+app.post(
+  "/api/auth/reset-password",
+  parseAuthBody,
+  rateLimit(resetPasswordRules),
+);
+// Better Auth's link-check route (it redirects saying whether a token is
+// valid). Nothing in the app uses it, but it answers "is this token real?",
+// so it shares the same per-IP limit as actually using a token.
+app.get("/api/auth/reset-password/:token", rateLimit(resetPasswordRules));
 app.all("/api/auth/{*any}", toNodeHandler(auth));
 app.use(express.json());
 

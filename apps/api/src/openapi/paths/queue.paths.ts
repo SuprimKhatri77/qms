@@ -16,7 +16,9 @@ import {
 const ownerSecurity = [{ [SESSION_COOKIE_AUTH]: [] }];
 
 const ticketIdParam = z.object({
-  ticketId: z.uuid().openapi({ description: "The ticket to resolve." }),
+  ticketId: z
+    .uuid()
+    .openapi({ description: "The ticket to resolve or remove." }),
 });
 
 const snapshotEnvelope = apiSuccessSchema(queueSnapshotSchema);
@@ -113,6 +115,28 @@ registry.registerPath({
   path: "/api/v1/shops/me/queue/tickets/{ticketId}/no-show",
   tags: ["Queue"],
   summary: "Mark the currently-serving ticket as a no-show",
+  security: ownerSecurity,
+  request: { params: ticketIdParam },
+  responses: {
+    200: {
+      description: "Updated queue snapshot.",
+      content: { "application/json": { schema: snapshotEnvelope } },
+    },
+    400: badRequest,
+    401: unauthorized,
+    403: forbidden,
+    404: notFound,
+    500: serverError,
+  },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/api/v1/shops/me/queue/tickets/{ticketId}/remove",
+  tags: ["Queue"],
+  summary: "Remove a waiting customer from the queue",
+  description:
+    "For a customer who tells staff they're leaving. Only a waiting ticket can be removed: the customer being served is finished with done/no-show instead, and any other ticket (unconfirmed, finished, another shop's, unknown) returns NOT_FOUND. The ticket is recorded as cancelled, the same as a customer leaving from their own page, so the customer's ticket page shows it as cancelled. No other ticket is changed: everyone behind moves up one place because positions are derived on read, and call-next skips the removed token.",
   security: ownerSecurity,
   request: { params: ticketIdParam },
   responses: {
