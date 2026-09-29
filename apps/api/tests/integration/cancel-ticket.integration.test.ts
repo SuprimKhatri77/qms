@@ -144,6 +144,29 @@ describe("customer leaves the queue", () => {
     expect(row?.status).toBe("serving");
   });
 
+  test("leaving emails the customer who just reached the front", async () => {
+    const ids = [];
+    for (const name of ["A", "B", "C", "D"]) {
+      ids.push(await joinAndVerify(shop.slug, name, testCustomerEmail(name)));
+    }
+    const [, b, , d] = ids as [string, string, string, string];
+    await callNext(ownerId);
+
+    const alertedBefore = await db
+      .select({ turnAlertSentAt: tickets.turnAlertSentAt })
+      .from(tickets)
+      .where(eq(tickets.id, d));
+    expect(alertedBefore[0]?.turnAlertSentAt).toBeNull();
+
+    await cancelTicket(b);
+
+    const alertedAfter = await db
+      .select({ turnAlertSentAt: tickets.turnAlertSentAt })
+      .from(tickets)
+      .where(eq(tickets.id, d));
+    expect(alertedAfter[0]?.turnAlertSentAt).not.toBeNull();
+  });
+
   test("an unknown ticket id is NOT_FOUND", async () => {
     const result = await cancelTicket(randomUUID());
     expect(result.success).toBe(false);

@@ -25,6 +25,14 @@ async function readTicketStatus(ticketId: string) {
   return row;
 }
 
+async function turnAlertSent(ticketId: string) {
+  const [row] = await db
+    .select({ turnAlertSentAt: tickets.turnAlertSentAt })
+    .from(tickets)
+    .where(eq(tickets.id, ticketId));
+  return row?.turnAlertSentAt !== null;
+}
+
 describe("owner removes a waiting customer", () => {
   let ownerId: string;
   let shop: Shop;
@@ -155,7 +163,27 @@ describe("owner removes a waiting customer", () => {
 
     expect(finishedWhileLocked).toBe(false);
     expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.code).toBe("NOT_FOUND");
+    }
     expect((await readTicketStatus(ticketId))?.status).toBe("serving");
+  });
+
+  test("removing someone emails the customer who just reached the front", async () => {
+    // A is called; B and C are then the first two waiting and get their
+    // "almost up" email. D is third, so not yet.
+    const ids = [];
+    for (const name of ["A", "B", "C", "D"]) {
+      ids.push(await joinAndVerify(shop.slug, name, testCustomerEmail(name)));
+    }
+    const [, b, , d] = ids as [string, string, string, string];
+    await callNext(ownerId);
+    expect(await turnAlertSent(d)).toBe(false);
+
+    await removeTicket(ownerId, b);
+
+    // D is now second in line, so it's D's turn to be told.
+    expect(await turnAlertSent(d)).toBe(true);
   });
 
   test("an unknown ticket id is NOT_FOUND", async () => {
@@ -167,7 +195,8 @@ describe("owner removes a waiting customer", () => {
 });
 
 // The ticket id comes from the request, so the only thing stopping owner A
-// from removing owner B's customer is the shop check inside the UPDATE.
+// from removing owner B's customer is that the UPDATE only matches tickets
+// in owner A's own queue, found through owner A's own shop.
 describe("removing a customer is scoped to the owner's own shop", () => {
   let ownerA: string;
   let ownerB: string;
