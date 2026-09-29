@@ -5,10 +5,10 @@ describe("isUnauthenticatedOnlyRoute", () => {
   test("login and signup are for signed-out visitors only", () => {
     expect(isUnauthenticatedOnlyRoute("/auth/login")).toBe(true);
     expect(isUnauthenticatedOnlyRoute("/auth/signup")).toBe(true);
-    expect(isUnauthenticatedOnlyRoute("/auth/forgot-password")).toBe(true);
   });
 
-  test("the reset-password page is open even when signed in", () => {
+  test("the forgot and reset password pages are open even when signed in", () => {
+    expect(isUnauthenticatedOnlyRoute("/auth/forgot-password")).toBe(false);
     expect(isUnauthenticatedOnlyRoute("/auth/reset-password")).toBe(false);
   });
 
