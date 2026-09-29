@@ -11,9 +11,10 @@ import {
   createTestShop,
   deleteTestOwner,
   joinAndVerify,
+  raceAgainstCallingTicket,
   testCustomerEmail,
 } from "./support/fixtures";
-import type { Shop } from "@repo/types";
+import { ErrorCode, type Shop } from "@repo/types";
 
 describe("customer leaves the queue", () => {
   let ownerId: string;
@@ -45,15 +46,19 @@ describe("customer leaves the queue", () => {
       .where(eq(tickets.id, ticketId));
     expect(row?.resolvedAt).not.toBeNull();
 
-    const rejoin = await joinQueue(shop.slug, { name: "Leaver", email });
+    const rejoin = await joinQueue(shop.slug, { name: "Leaver", email }, null);
     expect(rejoin.success).toBe(true);
   });
 
   test("a customer who hasn't confirmed yet can also leave", async () => {
-    const joinResult = await joinQueue(shop.slug, {
-      name: "Unsure",
-      email: testCustomerEmail("unsure"),
-    });
+    const joinResult = await joinQueue(
+      shop.slug,
+      {
+        name: "Unsure",
+        email: testCustomerEmail("unsure"),
+      },
+      null,
+    );
     expect(joinResult.success).toBe(true);
     if (!joinResult.success) return;
 
@@ -116,6 +121,54 @@ describe("customer leaves the queue", () => {
     expect(second.success).toBe(false);
     if (second.success) return;
     expect(second.code).toBe("CONFLICT");
+  });
+
+  test("a cancel racing call-next waits for it, and the called customer stays served", async () => {
+    const ticketId = await joinAndVerify(
+      shop.slug,
+      "Racer",
+      testCustomerEmail("racer"),
+    );
+
+    const { result, finishedWhileLocked } = await raceAgainstCallingTicket(
+      ticketId,
+      () => cancelTicket(ticketId),
+    );
+
+    expect(finishedWhileLocked).toBe(false);
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.code).toBe(ErrorCode.CONFLICT);
+    }
+
+    const [row] = await db
+      .select({ status: tickets.status })
+      .from(tickets)
+      .where(eq(tickets.id, ticketId));
+    expect(row?.status).toBe("serving");
+  });
+
+  test("leaving emails the customer who just reached the front", async () => {
+    const ids = [];
+    for (const name of ["A", "B", "C", "D"]) {
+      ids.push(await joinAndVerify(shop.slug, name, testCustomerEmail(name)));
+    }
+    const [, b, , d] = ids as [string, string, string, string];
+    await callNext(ownerId);
+
+    const alertedBefore = await db
+      .select({ turnAlertSentAt: tickets.turnAlertSentAt })
+      .from(tickets)
+      .where(eq(tickets.id, d));
+    expect(alertedBefore[0]?.turnAlertSentAt).toBeNull();
+
+    await cancelTicket(b);
+
+    const alertedAfter = await db
+      .select({ turnAlertSentAt: tickets.turnAlertSentAt })
+      .from(tickets)
+      .where(eq(tickets.id, d));
+    expect(alertedAfter[0]?.turnAlertSentAt).not.toBeNull();
   });
 
   test("an unknown ticket id is NOT_FOUND", async () => {

@@ -14,7 +14,7 @@
 
 ## Features
 
-- **Shop owners** — sign up, set up a shop, open/close today's queue, call the next customer, mark a ticket done or no-show, and view analytics (wait times, no-show rate, daily/hourly load).
+- **Shop owners** — sign up, set up a shop, open/close today's queue, call the next customer, mark a ticket done or no-show, remove a waiting customer who leaves, and view analytics (wait times, no-show rate, daily/hourly load).
 - **Customers** — no account needed. Scan the shop's QR code, join with a name and email, and track their live position on a public status page.
 - **Turn-alert emails** — customers within striking distance of being called get an automatic email, sent the moment `call next` moves the queue forward.
 - **Superadmin panel** — a platform-wide view for admin/superadmin accounts: list every shop and suspend/reactivate one, cross-shop analytics, and a system log of things like failed emails or unexpected errors.
@@ -63,6 +63,7 @@ Turborepo monorepo with Bun: Next.js frontend and Express API backed by PostgreS
 - Redis-backed limits on login, signup, Better Auth's email-sending routes, and joining a queue / verifying a ticket. Every limit is in [`apps/api/src/lib/rate-limit/rules.ts`](apps/api/src/lib/rate-limit/rules.ts)
 - Blocked requests get `429` with code `RATE_LIMITED` and a `Retry-After` header
 - If Redis is unreachable, requests are let through (rate limiting is off) and the outage is written to the admin system logs
+- Joining also sets a one-day `palo_device` cookie, and one device can hold at most 2 active tickets in the same queue (`409 CONFLICT` beyond that). It's a soft signal: clearing cookies resets it, so email verification and the limits above are the real defenses. The tokens are wiped from tickets once their queue is finished
 
 ## Prerequisites
 

@@ -1,13 +1,14 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
-import { shops, ticketVerifications, tickets } from "@/db/schema";
+import { shops, tickets } from "@/db/schema";
 import { joinQueue } from "@/services/tickets/join-queue.service";
 import { verifyTicket } from "@/services/tickets/verify-ticket.service";
 import {
   createTestOwner,
   createTestShop,
   deleteTestOwner,
+  expireVerificationLink,
   getVerificationToken,
   testCustomerEmail,
 } from "./support/fixtures";
@@ -30,10 +31,14 @@ describe("join -> verify", () => {
 
   test("creates a pending ticket that becomes waiting once verified", async () => {
     const email = testCustomerEmail("alice");
-    const joinResult = await joinQueue(shop.slug, {
-      name: "Alice",
-      email,
-    });
+    const joinResult = await joinQueue(
+      shop.slug,
+      {
+        name: "Alice",
+        email,
+      },
+      null,
+    );
 
     expect(joinResult.success).toBe(true);
     if (!joinResult.success) return;
@@ -56,10 +61,14 @@ describe("join -> verify", () => {
 
   test("rejects a second join from the same email while the first is still active", async () => {
     const email = testCustomerEmail("bob");
-    const first = await joinQueue(shop.slug, { name: "Bob", email });
+    const first = await joinQueue(shop.slug, { name: "Bob", email }, null);
     expect(first.success).toBe(true);
 
-    const second = await joinQueue(shop.slug, { name: "Bob Again", email });
+    const second = await joinQueue(
+      shop.slug,
+      { name: "Bob Again", email },
+      null,
+    );
     expect(second.success).toBe(false);
     if (second.success) return;
     expect(second.code).toBe("DUPLICATE_ENTRY");
@@ -71,10 +80,14 @@ describe("join -> verify", () => {
       .set({ status: "suspended" })
       .where(eq(shops.id, shop.id));
 
-    const result = await joinQueue(shop.slug, {
-      name: "Cara",
-      email: testCustomerEmail("cara"),
-    });
+    const result = await joinQueue(
+      shop.slug,
+      {
+        name: "Cara",
+        email: testCustomerEmail("cara"),
+      },
+      null,
+    );
 
     expect(result.success).toBe(false);
     if (result.success) return;
@@ -82,10 +95,14 @@ describe("join -> verify", () => {
   });
 
   test("rejects an expired verification link", async () => {
-    const joinResult = await joinQueue(shop.slug, {
-      name: "Dev",
-      email: testCustomerEmail("dev"),
-    });
+    const joinResult = await joinQueue(
+      shop.slug,
+      {
+        name: "Dev",
+        email: testCustomerEmail("dev"),
+      },
+      null,
+    );
     expect(joinResult.success).toBe(true);
     if (!joinResult.success) return;
 
@@ -107,13 +124,13 @@ describe("join -> verify", () => {
 
   test("lets a customer rejoin once their confirmation link has expired", async () => {
     const email = testCustomerEmail("fay");
-    const first = await joinQueue(shop.slug, { name: "Fay", email });
+    const first = await joinQueue(shop.slug, { name: "Fay", email }, null);
     expect(first.success).toBe(true);
     if (!first.success) return;
 
     await expireVerificationLink(first.data.ticketId);
 
-    const second = await joinQueue(shop.slug, { name: "Fay", email });
+    const second = await joinQueue(shop.slug, { name: "Fay", email }, null);
     expect(second.success).toBe(true);
     if (!second.success) return;
 
@@ -131,10 +148,14 @@ describe("join -> verify", () => {
   });
 
   test("an already-confirmed customer opening their old, expired link still sees their ticket", async () => {
-    const joinResult = await joinQueue(shop.slug, {
-      name: "Gus",
-      email: testCustomerEmail("gus"),
-    });
+    const joinResult = await joinQueue(
+      shop.slug,
+      {
+        name: "Gus",
+        email: testCustomerEmail("gus"),
+      },
+      null,
+    );
     expect(joinResult.success).toBe(true);
     if (!joinResult.success) return;
 
@@ -150,10 +171,14 @@ describe("join -> verify", () => {
   });
 
   test("verifying an already-verified ticket is idempotent", async () => {
-    const joinResult = await joinQueue(shop.slug, {
-      name: "Eve",
-      email: testCustomerEmail("eve"),
-    });
+    const joinResult = await joinQueue(
+      shop.slug,
+      {
+        name: "Eve",
+        email: testCustomerEmail("eve"),
+      },
+      null,
+    );
     expect(joinResult.success).toBe(true);
     if (!joinResult.success) return;
 
@@ -168,11 +193,3 @@ describe("join -> verify", () => {
     expect(secondVerify.data.ticket.status).toBe("waiting");
   });
 });
-
-// Moves a ticket's confirmation link into the past, as if 15 minutes had gone by.
-async function expireVerificationLink(ticketId: string): Promise<void> {
-  await db
-    .update(ticketVerifications)
-    .set({ expiresAt: new Date(Date.now() - 1000) })
-    .where(eq(ticketVerifications.ticketId, ticketId));
-}

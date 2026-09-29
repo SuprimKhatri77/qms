@@ -72,6 +72,20 @@ export async function expireFinishedQueues(): Promise<ExpirySweepResult> {
       )
       .returning({ id: tickets.id });
 
+    // The per-device join cap only ever looks at today's queue, so once a
+    // queue is finished its tickets' device tokens have no use left. Wiping
+    // them means the database never keeps a history of which tickets came
+    // from the same phone.
+    await tx
+      .update(tickets)
+      .set({ deviceToken: null })
+      .where(
+        inArray(
+          tickets.queueId,
+          finished.map((queue) => queue.id),
+        ),
+      );
+
     return { expiredQueues: finished.length, expiredTickets: expired.length };
   });
 }

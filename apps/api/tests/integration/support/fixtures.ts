@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
-import { ticketVerifications, users } from "@/db/schema";
+import { queues, ticketVerifications, tickets, users } from "@/db/schema";
 import type { CreateShopRequest, Shop } from "@repo/types";
 import { createShop } from "@/services/shops/create-shop.service";
 import { joinQueue } from "@/services/tickets/join-queue.service";
@@ -75,18 +75,32 @@ export async function getVerificationToken(ticketId: string): Promise<string> {
   return row.token;
 }
 
+// Moves a ticket's confirmation link into the past, as if 15 minutes had gone by.
+export async function expireVerificationLink(ticketId: string): Promise<void> {
+  await db
+    .update(ticketVerifications)
+    .set({ expiresAt: new Date(Date.now() - 1000) })
+    .where(eq(ticketVerifications.ticketId, ticketId));
+}
+
 // Runs the real join -> verify flow end to end and hands back the ticket id,
 // for tests whose real interest is what happens after a customer is already
-// waiting (call-next, resolve, tenant isolation, ...).
+// waiting (call-next, resolve, tenant isolation, ...). No device token by
+// default, so the per-device cap never gets in the way of those tests.
 export async function joinAndVerify(
   slug: string,
   customerName: string,
   customerEmail: string,
+  deviceToken: string | null = null,
 ): Promise<string> {
-  const joinResult = await joinQueue(slug, {
-    name: customerName,
-    email: customerEmail,
-  });
+  const joinResult = await joinQueue(
+    slug,
+    {
+      name: customerName,
+      email: customerEmail,
+    },
+    deviceToken,
+  );
 
   if (!joinResult.success) {
     throw new Error(`joinAndVerify: join failed: ${joinResult.message}`);
@@ -100,4 +114,55 @@ export async function joinAndVerify(
   }
 
   return joinResult.data.ticketId;
+}
+
+// Plays call-next's side of a race. Inside one transaction it takes the
+// ticket's queue row lock (exactly as callNext does), starts
+// `competingAction` (e.g. a cancel or remove of the same ticket), waits a
+// moment, then calls the ticket ("serving") and commits. A correct
+// competing action has to wait for the lock, so it can't have finished
+// while the lock was held, and it then sees the ticket already serving.
+export async function raceAgainstCallingTicket<T>(
+  ticketId: string,
+  competingAction: () => Promise<T>,
+): Promise<{ result: T; finishedWhileLocked: boolean }> {
+  let finished = false;
+  let finishedWhileLocked = false;
+  let competing: Promise<T> | undefined;
+
+  await db.transaction(async (tx) => {
+    const [ticket] = await tx
+      .select({ queueId: tickets.queueId })
+      .from(tickets)
+      .where(eq(tickets.id, ticketId))
+      .limit(1);
+
+    if (!ticket) {
+      throw new Error(`raceAgainstCallingTicket: no ticket ${ticketId}`);
+    }
+
+    await tx
+      .select({ id: queues.id })
+      .from(queues)
+      .where(eq(queues.id, ticket.queueId))
+      .for("update");
+
+    competing = competingAction().finally(() => {
+      finished = true;
+    });
+    // Long enough for an unlocked update to finish on another connection.
+    await Bun.sleep(300);
+    finishedWhileLocked = finished;
+
+    await tx
+      .update(tickets)
+      .set({ status: "serving", calledAt: new Date() })
+      .where(eq(tickets.id, ticketId));
+  });
+
+  if (!competing) {
+    throw new Error("raceAgainstCallingTicket: competing action never started");
+  }
+
+  return { result: await competing, finishedWhileLocked };
 }

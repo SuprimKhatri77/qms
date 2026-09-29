@@ -41,10 +41,14 @@ describe("people ahead", () => {
   // #5 and #6 waiting. By token numbers #6 looks 6th; really it's 3rd.
   async function queueWithGaps() {
     const one = await joinAndVerify(shop.slug, "One", testCustomerEmail("one"));
-    const two = await joinQueue(shop.slug, {
-      name: "Two",
-      email: testCustomerEmail("two"),
-    });
+    const two = await joinQueue(
+      shop.slug,
+      {
+        name: "Two",
+        email: testCustomerEmail("two"),
+      },
+      null,
+    );
     if (!two.success) throw new Error("join failed");
     const three = await joinAndVerify(
       shop.slug,
@@ -118,10 +122,14 @@ describe("people ahead", () => {
 
   test("verifying returns the same position the ticket page shows", async () => {
     const { six } = await queueWithGaps();
-    const late = await joinQueue(shop.slug, {
-      name: "Late",
-      email: testCustomerEmail("late"),
-    });
+    const late = await joinQueue(
+      shop.slug,
+      {
+        name: "Late",
+        email: testCustomerEmail("late"),
+      },
+      null,
+    );
     if (!late.success) throw new Error("join failed");
 
     const verified = await verifyTicket(
