@@ -22,6 +22,10 @@ export function WaitingList({ waiting }: WaitingListProps) {
   const [confirmingTicketId, setConfirmingTicketId] = useState<string | null>(
     null,
   );
+  // The row whose question was just answered "Keep". Its Remove button comes
+  // back and takes focus, so keyboard users land where they were instead of
+  // at the top of the page.
+  const [keptTicketId, setKeptTicketId] = useState<string | null>(null);
   const removeTicket = useRemoveTicket();
 
   function confirmRemove(ticketId: string) {
@@ -72,7 +76,10 @@ export function WaitingList({ waiting }: WaitingListProps) {
                     ticket={ticket}
                     isRemoving={removeTicket.isPending}
                     onConfirm={() => confirmRemove(ticket.id)}
-                    onKeep={() => setConfirmingTicketId(null)}
+                    onKeep={() => {
+                      setConfirmingTicketId(null);
+                      setKeptTicketId(ticket.id);
+                    }}
                   />
                 ) : (
                   <Button
@@ -81,7 +88,11 @@ export function WaitingList({ waiting }: WaitingListProps) {
                     className="text-ink-mute"
                     disabled={removeTicket.isPending}
                     aria-label={`Remove ${customerLabel(ticket)} from the queue`}
-                    onClick={() => setConfirmingTicketId(ticket.id)}
+                    autoFocus={keptTicketId === ticket.id}
+                    onClick={() => {
+                      setKeptTicketId(null);
+                      setConfirmingTicketId(ticket.id);
+                    }}
                   >
                     Remove
                   </Button>
@@ -118,13 +129,23 @@ function RemoveConfirm({
       role="group"
       aria-label={`Remove ${label}?`}
       className="flex items-center gap-2"
+      // Escape backs out, like closing any other "are you sure?" prompt.
+      onKeyDown={(event) => {
+        if (event.key === "Escape" && !isRemoving) {
+          onKeep();
+        }
+      }}
     >
       <span className="text-sm text-ink">Remove?</span>
       <Button
         variant="destructive"
         size="sm"
         disabled={isRemoving}
-        aria-label={`Yes, remove ${label}`}
+        // Stays focusable while the request runs, so focus isn't dropped to
+        // the page, and the label says what's happening for screen readers
+        // (it replaces the visible "Removing..." text for them).
+        focusableWhenDisabled
+        aria-label={isRemoving ? `Removing ${label}` : `Yes, remove ${label}`}
         onClick={onConfirm}
       >
         {isRemoving ? (
