@@ -35,7 +35,9 @@ const STATUS_COPY: Partial<
   },
   cancelled: {
     title: "Ticket cancelled",
-    description: "This ticket is no longer active.",
+    // Covers both ways a ticket is cancelled: the customer left from this
+    // page, or the shop removed them from its list.
+    description: "This ticket was cancelled and is no longer in the queue.",
   },
   expired: {
     title: "Ticket expired",
