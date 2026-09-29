@@ -82,7 +82,7 @@ registry.registerPath({
   tags: ["Public"],
   summary: "Join a shop's queue",
   description:
-    "Creates a pending ticket and emails a verification link. Fails with CONFLICT if the shop is suspended or today's queue is closed, and DUPLICATE_ENTRY if this email already has an active ticket today.",
+    "Creates a pending ticket and emails a verification link. Fails with CONFLICT if the shop is suspended, it's past the shop's closing time, or today's queue is closed, and DUPLICATE_ENTRY if this email already has an active ticket today. An unconfirmed ticket whose link has run out doesn't count as active: it's marked expired first, so the customer can join again.",
   request: {
     params: slugParam,
     body: { content: { "application/json": { schema: joinQueueSchema } } },
@@ -109,7 +109,8 @@ registry.registerPath({
   path: "/api/v1/public/tickets/verify",
   tags: ["Public"],
   summary: "Verify a ticket from its emailed token",
-  description: "Moves a ticket from pending_verification to waiting.",
+  description:
+    "Moves a ticket from pending_verification to waiting. An expired link fails with CONFLICT and marks the ticket expired, so the customer can join again. A link that was already used (a second click, or an email scanner opening it first) isn't an error: it returns the ticket as it is now.",
   request: {
     body: { content: { "application/json": { schema: verifyTicketSchema } } },
   },

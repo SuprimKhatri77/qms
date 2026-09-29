@@ -45,6 +45,7 @@ registry.registerPath({
     400: badRequest,
     401: unauthorized,
     403: forbidden,
+    404: notFound,
     500: serverError,
   },
 });

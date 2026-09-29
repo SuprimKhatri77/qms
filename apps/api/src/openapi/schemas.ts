@@ -47,26 +47,27 @@ export const shopSchema = z.object({
   lng: z.number().nullable(),
   timezone: z.string(),
   avgServiceMinutes: z.number(),
-  closingTime: z
-    .string()
-    .nullable()
-    .openapi({
-      description:
-        'Shop-local "HH:MM"; null means the queue closes at midnight.',
-    }),
+  closingTime: z.string().nullable().openapi({
+    description: 'Shop-local "HH:MM"; null means the queue closes at midnight.',
+  }),
   createdAt: z.iso.datetime(),
   updatedAt: z.iso.datetime(),
 });
 
-const ticketStatusSchema = z.enum([
-  "pending_verification",
-  "waiting",
-  "serving",
-  "done",
-  "no_show",
-  "cancelled",
-  "expired",
-]);
+const ticketStatusSchema = z
+  .enum([
+    "pending_verification",
+    "waiting",
+    "serving",
+    "done",
+    "no_show",
+    "cancelled",
+    "expired",
+  ])
+  .openapi({
+    description:
+      '"expired" means the ticket can no longer be served: its confirmation link ran out, or its queue finished (closing time or end of day) while it was still pending or waiting.',
+  });
 
 export const queueTicketSchema = z.object({
   id: z.uuid(),
@@ -101,8 +102,14 @@ export const publicTicketSchema = z.object({
   tokenNumber: z.number(),
   customerName: z.string(),
   status: ticketStatusSchema,
-  position: z.number().nullable(),
-  etaMinutes: z.number().nullable(),
+  position: z.number().nullable().openapi({
+    description:
+      "Place in line, worked out on every read and never stored. 0 while serving; otherwise 1 + the number of verified customers still waiting with a lower token (1 = next). Unconfirmed, cancelled and expired tickets don't count. null when the ticket isn't in line.",
+  }),
+  etaMinutes: z.number().nullable().openapi({
+    description:
+      "Rough estimate: position × the shop's average service minutes. null when position is null.",
+  }),
   createdAt: z.iso.datetime(),
 });
 
@@ -189,12 +196,9 @@ export const discoveredShopSchema = z.object({
   area: z.string().nullable(),
   lat: z.number().nullable(),
   lng: z.number().nullable(),
-  distanceKm: z
-    .number()
-    .nullable()
-    .openapi({
-      description: "Distance from the searched location; null without one.",
-    }),
+  distanceKm: z.number().nullable().openapi({
+    description: "Distance from the searched location; null without one.",
+  }),
   queueOpen: z
     .boolean()
     .openapi({ description: "Whether today's queue is taking new customers." }),
