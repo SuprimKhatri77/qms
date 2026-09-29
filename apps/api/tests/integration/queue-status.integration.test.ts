@@ -32,10 +32,14 @@ describe("open / close today's queue", () => {
     if (!closed.success) return;
     expect(closed.data.queue.status).toBe("closed");
 
-    const refused = await joinQueue(shop.slug, {
-      name: "Late",
-      email: testCustomerEmail("late"),
-    });
+    const refused = await joinQueue(
+      shop.slug,
+      {
+        name: "Late",
+        email: testCustomerEmail("late"),
+      },
+      null,
+    );
     expect(refused.success).toBe(false);
     if (refused.success) return;
     expect(refused.code).toBe("CONFLICT");
@@ -43,10 +47,14 @@ describe("open / close today's queue", () => {
     const reopened = await setQueueStatus(ownerId, "active");
     expect(reopened.success).toBe(true);
 
-    const accepted = await joinQueue(shop.slug, {
-      name: "Late",
-      email: testCustomerEmail("late"),
-    });
+    const accepted = await joinQueue(
+      shop.slug,
+      {
+        name: "Late",
+        email: testCustomerEmail("late"),
+      },
+      null,
+    );
     expect(accepted.success).toBe(true);
   });
 

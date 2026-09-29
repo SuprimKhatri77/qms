@@ -70,10 +70,14 @@ describe("queue expiry sweep", () => {
       "Waiting",
       testCustomerEmail("waiting"),
     );
-    const pending = await joinQueue(shop.slug, {
-      name: "Pending",
-      email: testCustomerEmail("pending"),
-    });
+    const pending = await joinQueue(
+      shop.slug,
+      {
+        name: "Pending",
+        email: testCustomerEmail("pending"),
+      },
+      null,
+    );
     if (!pending.success) throw new Error("join failed");
     await callNext(ownerId);
 
@@ -179,10 +183,14 @@ describe("queue expiry sweep", () => {
   test("past closing time, joining is refused at once, before any sweep", async () => {
     await setClosingTime(shop.id, ALREADY_CLOSED);
 
-    const result = await joinQueue(shop.slug, {
-      name: "Late",
-      email: testCustomerEmail("late"),
-    });
+    const result = await joinQueue(
+      shop.slug,
+      {
+        name: "Late",
+        email: testCustomerEmail("late"),
+      },
+      null,
+    );
     expect(result.success).toBe(false);
     if (result.success) return;
     expect(result.code).toBe("CONFLICT");

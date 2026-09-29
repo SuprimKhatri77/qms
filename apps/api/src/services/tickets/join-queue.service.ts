@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import { and, eq, gt, inArray, max, notExists } from "drizzle-orm";
+import { and, count, eq, gt, inArray, max, notExists, or } from "drizzle-orm";
 import { db } from "@/db";
 import { queues, ticketVerifications, tickets } from "@/db/schema";
 import type {
@@ -18,14 +18,26 @@ import { logEvent } from "@/lib/system-logs/log-event";
 // Auth already uses for its own email links (resetPasswordTokenExpiresIn).
 const VERIFICATION_TTL_MS = 15 * 60 * 1000;
 
-// Statuses that count as "already in line" for the one-active-ticket-per-email
-// rule. Mirrors the partial unique index on the tickets table, which is the
-// real backstop against a race; this is just the friendly check that runs first.
+// Statuses that count as "already in line", for both the one-active-ticket-
+// per-email rule and the per-device cap below. For the email rule this mirrors
+// the partial unique index on the tickets table, which is the real backstop
+// against a race; the check here is just the friendly one that runs first.
 const ACTIVE_STATUSES = ["pending_verification", "waiting", "serving"] as const;
+
+// How many places one browser (its palo_device cookie) may hold in the same
+// queue at once. 2, not 1, so someone can also join for a companion without
+// needing a second phone. A soft limit only: clearing cookies resets it, so
+// email verification and the rate limits remain the real defenses.
+const MAX_ACTIVE_TICKETS_PER_DEVICE = 2;
 
 export async function joinQueue(
   slug: string,
   data: JoinQueueRequest,
+  // The browser's palo_device cookie. The controller mints a fresh one for a
+  // first visit (or blocked cookies), which has no tickets yet and so is
+  // never capped: that's what makes this soft. Null skips the device check
+  // entirely, for callers with no browser behind them.
+  deviceToken: string | null,
 ): Promise<JoinQueueResponse | ApiErrorResponse> {
   try {
     const shop = await getShopBySlug(slug);
@@ -82,6 +94,17 @@ export async function joinQueue(
       // "waiting", but it would still count as this email's one active
       // ticket and block every rejoin for the rest of the day. Retire it as
       // "expired" first, so "join the queue again" actually works.
+      //
+      // The same goes for the device cap below: a dead ticket this device
+      // made under another email (a typo, say) shouldn't keep using up one
+      // of its places, so this device's dead tickets are retired too.
+      const belongsToThisCustomer = deviceToken
+        ? or(
+            eq(tickets.customerEmail, data.email),
+            eq(tickets.deviceToken, deviceToken),
+          )
+        : eq(tickets.customerEmail, data.email);
+
       const now = new Date();
       await tx
         .update(tickets)
@@ -89,7 +112,7 @@ export async function joinQueue(
         .where(
           and(
             eq(tickets.queueId, queue.id),
-            eq(tickets.customerEmail, data.email),
+            belongsToThisCustomer,
             eq(tickets.status, "pending_verification"),
             notExists(
               tx
@@ -125,6 +148,30 @@ export async function joinQueue(
         };
       }
 
+      // Runs under the queue row lock taken above, so two joins sent from
+      // one device at the same instant are counted one after the other and
+      // can't both slip in under the cap.
+      if (deviceToken) {
+        const [deviceTickets] = await tx
+          .select({ total: count() })
+          .from(tickets)
+          .where(
+            and(
+              eq(tickets.queueId, queue.id),
+              eq(tickets.deviceToken, deviceToken),
+              inArray(tickets.status, ACTIVE_STATUSES),
+            ),
+          );
+
+        if ((deviceTickets?.total ?? 0) >= MAX_ACTIVE_TICKETS_PER_DEVICE) {
+          return {
+            success: false as const,
+            message: `This device already holds ${MAX_ACTIVE_TICKETS_PER_DEVICE} places in this queue`,
+            code: ErrorCode.CONFLICT,
+          };
+        }
+      }
+
       const [row] = await tx
         .select({ highest: max(tickets.tokenNumber) })
         .from(tickets)
@@ -139,6 +186,7 @@ export async function joinQueue(
           customerName: data.name,
           customerEmail: data.email,
           customerPhone: data.phone ?? null,
+          deviceToken,
         })
         .returning();
 
