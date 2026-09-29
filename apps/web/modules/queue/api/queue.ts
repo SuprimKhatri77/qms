@@ -41,3 +41,12 @@ export const markNoShow = async (
   );
   return res.data;
 };
+
+export const removeTicket = async (
+  ticketId: string,
+): Promise<QueueSnapshotResponse> => {
+  const res = await api.post<QueueSnapshotResponse>(
+    `/shops/me/queue/tickets/${ticketId}/remove`,
+  );
+  return res.data;
+};
