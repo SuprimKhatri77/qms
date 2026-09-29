@@ -9,6 +9,7 @@
     "check-types": "turbo run check-types",
     "test": "turbo run test",
     "test:integration": "turbo run test:integration --filter=api",
+    "db:seed": "turbo run db:seed --filter=api",
     "docs:generate": "turbo run docs:generate --filter=api",
     "docker:dev:up": "docker compose --env-file .env.local -f docker-compose.dev.yml up --build",
     "docker:dev:down": "docker compose --env-file .env.local -f docker-compose.dev.yml down",
