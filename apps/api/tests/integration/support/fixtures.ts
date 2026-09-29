@@ -75,18 +75,32 @@ export async function getVerificationToken(ticketId: string): Promise<string> {
   return row.token;
 }
 
+// Moves a ticket's confirmation link into the past, as if 15 minutes had gone by.
+export async function expireVerificationLink(ticketId: string): Promise<void> {
+  await db
+    .update(ticketVerifications)
+    .set({ expiresAt: new Date(Date.now() - 1000) })
+    .where(eq(ticketVerifications.ticketId, ticketId));
+}
+
 // Runs the real join -> verify flow end to end and hands back the ticket id,
 // for tests whose real interest is what happens after a customer is already
-// waiting (call-next, resolve, tenant isolation, ...).
+// waiting (call-next, resolve, tenant isolation, ...). No device token by
+// default, so the per-device cap never gets in the way of those tests.
 export async function joinAndVerify(
   slug: string,
   customerName: string,
   customerEmail: string,
+  deviceToken: string | null = null,
 ): Promise<string> {
-  const joinResult = await joinQueue(slug, {
-    name: customerName,
-    email: customerEmail,
-  });
+  const joinResult = await joinQueue(
+    slug,
+    {
+      name: customerName,
+      email: customerEmail,
+    },
+    deviceToken,
+  );
 
   if (!joinResult.success) {
     throw new Error(`joinAndVerify: join failed: ${joinResult.message}`);

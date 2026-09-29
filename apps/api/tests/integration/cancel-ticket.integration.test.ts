@@ -46,15 +46,19 @@ describe("customer leaves the queue", () => {
       .where(eq(tickets.id, ticketId));
     expect(row?.resolvedAt).not.toBeNull();
 
-    const rejoin = await joinQueue(shop.slug, { name: "Leaver", email });
+    const rejoin = await joinQueue(shop.slug, { name: "Leaver", email }, null);
     expect(rejoin.success).toBe(true);
   });
 
   test("a customer who hasn't confirmed yet can also leave", async () => {
-    const joinResult = await joinQueue(shop.slug, {
-      name: "Unsure",
-      email: testCustomerEmail("unsure"),
-    });
+    const joinResult = await joinQueue(
+      shop.slug,
+      {
+        name: "Unsure",
+        email: testCustomerEmail("unsure"),
+      },
+      null,
+    );
     expect(joinResult.success).toBe(true);
     if (!joinResult.success) return;
 

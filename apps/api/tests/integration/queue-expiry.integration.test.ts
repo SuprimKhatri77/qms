@@ -70,10 +70,14 @@ describe("queue expiry sweep", () => {
       "Waiting",
       testCustomerEmail("waiting"),
     );
-    const pending = await joinQueue(shop.slug, {
-      name: "Pending",
-      email: testCustomerEmail("pending"),
-    });
+    const pending = await joinQueue(
+      shop.slug,
+      {
+        name: "Pending",
+        email: testCustomerEmail("pending"),
+      },
+      null,
+    );
     if (!pending.success) throw new Error("join failed");
     await callNext(ownerId);
 
@@ -138,6 +142,30 @@ describe("queue expiry sweep", () => {
     expect((await statusOf(waiting)).status).toBe("expired");
   });
 
+  test("a finished queue's device tokens are wiped", async () => {
+    const device = "0123456789abcdef0123456789abcdef";
+    const ticketId = await joinAndVerify(
+      shop.slug,
+      "Phone owner",
+      testCustomerEmail("phone"),
+      device,
+    );
+
+    const yesterday = addDays(getShopLocalDate(shop.timezone), -1);
+    await db
+      .update(queues)
+      .set({ date: yesterday })
+      .where(eq(queues.shopId, shop.id));
+
+    await expireFinishedQueues();
+
+    const [row] = await db
+      .select({ deviceToken: tickets.deviceToken })
+      .from(tickets)
+      .where(eq(tickets.id, ticketId));
+    expect(row?.deviceToken).toBeNull();
+  });
+
   test("another shop's queue is untouched", async () => {
     const otherOwnerId = await createTestOwner();
     try {
@@ -179,10 +207,14 @@ describe("queue expiry sweep", () => {
   test("past closing time, joining is refused at once, before any sweep", async () => {
     await setClosingTime(shop.id, ALREADY_CLOSED);
 
-    const result = await joinQueue(shop.slug, {
-      name: "Late",
-      email: testCustomerEmail("late"),
-    });
+    const result = await joinQueue(
+      shop.slug,
+      {
+        name: "Late",
+        email: testCustomerEmail("late"),
+      },
+      null,
+    );
     expect(result.success).toBe(false);
     if (result.success) return;
     expect(result.code).toBe("CONFLICT");
