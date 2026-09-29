@@ -5,6 +5,7 @@ import { db } from "@/db";
 import * as schema from "@/db/schema";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { sendMail } from "@/lib/emails/send-email";
+import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "@repo/types";
 
 const superadminAc = defaultAc.newRole({
   user: [
@@ -47,6 +48,10 @@ export const auth = betterAuth({
     enabled: true,
     autoSignIn: true,
     requireEmailVerification: false,
+    // Same bounds as the zod schemas in @repo/types, so Better Auth's own
+    // /api/auth/* routes can't set a password that /api/v1 login refuses.
+    minPasswordLength: PASSWORD_MIN_LENGTH,
+    maxPasswordLength: PASSWORD_MAX_LENGTH,
     resetPasswordTokenExpiresIn: 900,
     sendResetPassword: async ({ user, url, token }, request) => {
       const customForgotPasswordURL = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;

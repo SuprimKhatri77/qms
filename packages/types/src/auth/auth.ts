@@ -13,12 +13,27 @@ export const userSchema = z.object({
 
 export type User = z.infer<typeof userSchema>;
 
+// Shared by signup, login and password reset so every way of setting a
+// password agrees on the same bounds. The API passes the same numbers to
+// Better Auth (lib/auth.ts), so its own routes can't set a password that
+// this schema would then refuse at login.
+export const PASSWORD_MIN_LENGTH = 8;
+export const PASSWORD_MAX_LENGTH = 50;
+
+const emailSchema = z.email({ error: "Please enter a valid email address" });
+
+const passwordSchema = z
+  .string({ error: "Password is required" })
+  .min(PASSWORD_MIN_LENGTH, {
+    error: `Password must be at least ${PASSWORD_MIN_LENGTH} characters`,
+  })
+  .max(PASSWORD_MAX_LENGTH, {
+    error: `Password must be at most ${PASSWORD_MAX_LENGTH} characters`,
+  });
+
 export const authSchema = z.object({
-  email: z.email({ error: "Please enter a valid email address" }),
-  password: z
-    .string({ error: "Password is required" })
-    .min(8, { error: "Password must be at least 8 characters" })
-    .max(50, { error: "Password must be at most 50 characters" }),
+  email: emailSchema,
+  password: passwordSchema,
 });
 
 export const loginSchema = authSchema;
@@ -40,13 +55,17 @@ export const signupSchema = authSchema.extend({
 
 export type SignupRequest = z.infer<typeof signupSchema>;
 
-export const signupFormSchema = signupSchema
-  .extend({
-    confirmPassword: z
-      .string({ error: "Please confirm your password" })
-      .min(8, { error: "Password must be at least 8 characters" })
-      .max(50, { error: "Password must be at most 50 characters" }),
+const confirmPasswordSchema = z
+  .string({ error: "Please confirm your password" })
+  .min(PASSWORD_MIN_LENGTH, {
+    error: `Password must be at least ${PASSWORD_MIN_LENGTH} characters`,
   })
+  .max(PASSWORD_MAX_LENGTH, {
+    error: `Password must be at most ${PASSWORD_MAX_LENGTH} characters`,
+  });
+
+export const signupFormSchema = signupSchema
+  .extend({ confirmPassword: confirmPasswordSchema })
   .refine((data) => data.password === data.confirmPassword, {
     error: "Passwords do not match",
     path: ["confirmPassword"],
