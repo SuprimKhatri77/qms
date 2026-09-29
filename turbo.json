@@ -29,7 +29,12 @@
     },
     "db:seed": {
       "cache": false,
-      "passThroughEnv": ["SEED_PASSWORD", "NODE_ENV"]
+      "passThroughEnv": [
+        "DATABASE_URL",
+        "NODE_ENV",
+        "SEED_ALLOW_REMOTE_DB",
+        "SEED_PASSWORD"
+      ]
     }
   }
 }
