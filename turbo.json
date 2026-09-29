@@ -23,6 +23,10 @@
     },
     "docs:generate": {
       "cache": false
+    },
+    "db:seed": {
+      "cache": false,
+      "passThroughEnv": ["SEED_PASSWORD", "NODE_ENV"]
     }
   }
 }
