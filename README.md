@@ -180,21 +180,32 @@ history. After `db:migrate`, run the seed from `apps/api` (it uses the same
 SEED_PASSWORD=choose-a-password bun run db:seed
 ```
 
-(`SEED_PASSWORD` can also go in `apps/api/.env.development` instead.)
+(`SEED_PASSWORD` can also go in `apps/api/.env.development` instead, which
+is the file the seed reads.)
 
 It creates:
 
 - `superadmin@palo.test` (superadmin), the first admin account
 - `owner@palo.test` and `owner2@palo.test` … `owner4@palo.test` (owners), each
   with a shop in Kathmandu or Pokhara in a different category
-- for the first shop (Hari's Barber Studio): 14 past days of closed queues
-  with served, no-show and cancelled customers, plus 4 customers waiting in
-  today's queue
+- for the first shop (Hari's Barber Studio): closed queues for the past 14
+  days with served, no-show and cancelled customers, plus 4 customers waiting
+  in today's queue
 
-Every account logs in with the `SEED_PASSWORD` you set (8-50 characters); it
-is never stored in the repo. All addresses use the reserved `.test` domain,
-so no email can reach a real person. Running it again is safe: anything that
-already exists is skipped. It refuses to run with `NODE_ENV=production`.
+Every account logs in with the `SEED_PASSWORD` you set when it was first
+created; it is never stored in the repo. It must follow the login form's
+password rule (`PASSWORD_MIN_LENGTH`–`PASSWORD_MAX_LENGTH` in `@repo/types`).
+All addresses use the reserved `.test` domain, so no email can reach a real
+person.
+
+Running it again is safe: existing accounts and shops are kept as they are
+(accounts keep their original password), and only the past days that have no
+queue yet are filled in, so seeding again before a demo brings the history up
+to date.
+
+It refuses to run with `NODE_ENV=production`, and against any database that
+isn't local (`localhost` or the Compose `db` service) unless you set
+`SEED_ALLOW_REMOTE_DB=1`. It prints which database it's seeding first.
 
 ## Scripts (root)
 
