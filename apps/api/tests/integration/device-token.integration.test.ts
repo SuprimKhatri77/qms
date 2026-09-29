@@ -58,7 +58,7 @@ describe("per-device cap on joining", () => {
     expect(third.success).toBe(false);
     if (third.success) return;
     expect(third.code).toBe("CONFLICT");
-    expect(third.message).toBe(
+    expect(third.message).toContain(
       "This device already holds 2 places in this queue",
     );
 

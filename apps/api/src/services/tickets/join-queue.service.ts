@@ -35,8 +35,9 @@ export async function joinQueue(
   data: JoinQueueRequest,
   // The browser's palo_device cookie. The controller mints a fresh one for a
   // first visit (or blocked cookies), which has no tickets yet and so is
-  // never capped: that's what makes this soft. Null skips the device check
-  // entirely, for callers with no browser behind them.
+  // never capped: that's what makes this soft. The controller always passes
+  // a token; null skips the device check, which the tests use to exercise
+  // the email rules on their own.
   deviceToken: string | null,
 ): Promise<JoinQueueResponse | ApiErrorResponse> {
   try {
@@ -166,7 +167,7 @@ export async function joinQueue(
         if ((deviceTickets?.total ?? 0) >= MAX_ACTIVE_TICKETS_PER_DEVICE) {
           return {
             success: false as const,
-            message: `This device already holds ${MAX_ACTIVE_TICKETS_PER_DEVICE} places in this queue`,
+            message: `This device already holds ${MAX_ACTIVE_TICKETS_PER_DEVICE} places in this queue. Leave one from its ticket page to free a place.`,
             code: ErrorCode.CONFLICT,
           };
         }
