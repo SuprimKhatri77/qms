@@ -142,6 +142,30 @@ describe("queue expiry sweep", () => {
     expect((await statusOf(waiting)).status).toBe("expired");
   });
 
+  test("a finished queue's device tokens are wiped", async () => {
+    const device = "0123456789abcdef0123456789abcdef";
+    const ticketId = await joinAndVerify(
+      shop.slug,
+      "Phone owner",
+      testCustomerEmail("phone"),
+      device,
+    );
+
+    const yesterday = addDays(getShopLocalDate(shop.timezone), -1);
+    await db
+      .update(queues)
+      .set({ date: yesterday })
+      .where(eq(queues.shopId, shop.id));
+
+    await expireFinishedQueues();
+
+    const [row] = await db
+      .select({ deviceToken: tickets.deviceToken })
+      .from(tickets)
+      .where(eq(tickets.id, ticketId));
+    expect(row?.deviceToken).toBeNull();
+  });
+
   test("another shop's queue is untouched", async () => {
     const otherOwnerId = await createTestOwner();
     try {
