@@ -1,4 +1,4 @@
-import { and, asc, eq, gt } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { queues, tickets } from "@/db/schema";
 import type { ApiErrorResponse, QueueSnapshotResponse } from "@repo/types";
@@ -10,8 +10,9 @@ import { getQueueSnapshotResponse } from "./queue-snapshot";
 import { claimTurnAlerts, sendTurnAlerts, type TurnAlert } from "./turn-alerts";
 
 /**
- * "Call next": moves the queue's single counter forward to the next waiting
- * customer and marks that ticket as serving.
+ * "Call next": sets the queue's single counter to the next waiting
+ * customer's token (the lowest one still waiting) and marks that ticket as
+ * serving.
  *
  * The write to the queue is one UPDATE of `current_serving_number`, no matter
  * how many people are waiting. No per-customer position is stored anywhere:
@@ -77,18 +78,20 @@ export async function callNext(
           };
         }
 
-        // Token numbers can have gaps (a ticket that was never verified, or was
-        // cancelled while waiting). Jump to the next token that really is
-        // waiting, so the owner never calls a number nobody holds.
+        // The lowest token that is really waiting: the same order a
+        // customer's position is counted in (count-waiting-ahead.ts), so
+        // whoever their page says is next is who gets called. Gaps (tickets
+        // never confirmed, cancelled or expired) are simply skipped.
+        //
+        // Deliberately not "the next token above the counter": a customer
+        // can confirm their email after a later token has already been
+        // called, and would then sit below the counter, told "You're next"
+        // but never called.
         const [next] = await tx
           .select()
           .from(tickets)
           .where(
-            and(
-              eq(tickets.queueId, queue.id),
-              eq(tickets.status, "waiting"),
-              gt(tickets.tokenNumber, queue.currentServingNumber),
-            ),
+            and(eq(tickets.queueId, queue.id), eq(tickets.status, "waiting")),
           )
           .orderBy(asc(tickets.tokenNumber))
           .limit(1);

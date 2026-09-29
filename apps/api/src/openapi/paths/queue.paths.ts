@@ -75,7 +75,7 @@ registry.registerPath({
   tags: ["Queue"],
   summary: "Call the next waiting customer",
   description:
-    "Advances the queue's counter to the next waiting ticket. Fails with CONFLICT if someone is already being served or nobody is waiting. Still works while the queue is closed: closing only stops new joins. Fires turn-alert emails to customers now within range of being called.",
+    "Sets the queue's counter to the lowest waiting token (the same order customers' positions are counted in), so a customer who confirmed their email late still gets their place. Fails with CONFLICT if someone is already being served or nobody is waiting. Still works while the queue is closed: closing only stops new joins. Fires turn-alert emails to customers now within range of being called.",
   security: ownerSecurity,
   responses: {
     200: {
