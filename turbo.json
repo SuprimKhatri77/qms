@@ -26,6 +26,15 @@
     },
     "docs:generate": {
       "cache": false
+    },
+    "db:seed": {
+      "cache": false,
+      "passThroughEnv": [
+        "DATABASE_URL",
+        "NODE_ENV",
+        "SEED_ALLOW_REMOTE_DB",
+        "SEED_PASSWORD"
+      ]
     }
   }
 }
