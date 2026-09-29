@@ -5,10 +5,13 @@ import { tickets } from "@/db/schema";
 import { callNext } from "@/services/queue/call-next.service";
 import { resolveTicket } from "@/services/queue/resolve-ticket.service";
 import { getPublicTicket } from "@/services/tickets/get-public-ticket.service";
+import { joinQueue } from "@/services/tickets/join-queue.service";
+import { verifyTicket } from "@/services/tickets/verify-ticket.service";
 import {
   createTestOwner,
   createTestShop,
   deleteTestOwner,
+  getVerificationToken,
   joinAndVerify,
   testCustomerEmail,
 } from "./support/fixtures";
@@ -100,6 +103,34 @@ describe("call-next flow", () => {
     expect(row2?.turnAlertSentAt).not.toBeNull();
     expect(row3?.turnAlertSentAt).not.toBeNull();
     expect(row4?.turnAlertSentAt).toBeNull();
+  });
+
+  test("a customer who confirms after a later token was called still gets called", async () => {
+    // Late joins first (token 1) but doesn't confirm yet; Early joins
+    // second (token 2), confirms, and is called and served.
+    const late = await joinQueue(
+      shop.slug,
+      { name: "Late", email: testCustomerEmail("late") },
+      null,
+    );
+    if (!late.success) throw new Error(late.message);
+    const early = await joinAndVerify(
+      shop.slug,
+      "Early",
+      testCustomerEmail("early"),
+    );
+    await callNext(ownerId);
+    await resolveTicket(ownerId, early, "done");
+
+    // Now Late confirms, within the link's lifetime: they're waiting, with
+    // a token below the counter.
+    await verifyTicket(await getVerificationToken(late.data.ticketId));
+
+    const call = await callNext(ownerId);
+
+    expect(call.success).toBe(true);
+    if (!call.success) return;
+    expect(call.data.serving?.id).toBe(late.data.ticketId);
   });
 
   test("rejects calling next while someone is already being served", async () => {
