@@ -165,7 +165,34 @@ bun run db:generate   # create migrations
 bun run db:migrate    # apply migrations
 bun run db:push       # push schema (dev)
 bun run db:studio     # Drizzle Studio
+bun run db:seed       # demo data (see below)
 ```
+
+### Demo data
+
+A fresh database has no admin and nothing to show on /explore, analytics or
+history. After `db:migrate`, run the seed from `apps/api` (it uses the same
+`apps/api/.env.development` database as the API) or from the repo root:
+
+```bash
+SEED_PASSWORD=choose-a-password bun run db:seed
+```
+
+(`SEED_PASSWORD` can also go in `apps/api/.env.development` instead.)
+
+It creates:
+
+- `superadmin@palo.test` (superadmin), the first admin account
+- `owner@palo.test` and `owner2@palo.test` … `owner4@palo.test` (owners), each
+  with a shop in Kathmandu or Pokhara in a different category
+- for the first shop (Hari's Barber Studio): 14 past days of closed queues
+  with served, no-show and cancelled customers, plus 4 customers waiting in
+  today's queue
+
+Every account logs in with the `SEED_PASSWORD` you set (8-50 characters); it
+is never stored in the repo. All addresses use the reserved `.test` domain,
+so no email can reach a real person. Running it again is safe: anything that
+already exists is skipped. It refuses to run with `NODE_ENV=production`.
 
 ## Scripts (root)
 
@@ -176,6 +203,7 @@ bun run db:studio     # Drizzle Studio
 | `bun run check-types`     | Typecheck across the monorepo  |
 | `bun run lint`            | Lint via Turbo                 |
 | `bun run format`          | Prettier write                 |
+| `bun run db:seed`         | Seed demo data (see above)     |
 | `bun run docker:dev:up`   | Build & start Docker dev stack |
 | `bun run docker:dev:down` | Stop Docker dev stack          |
 
@@ -193,6 +221,7 @@ Copy [`.env.example`](.env.example) → `.env.local` at the repo root (used by C
 | `FRONTEND_URL`                      | Web origin for CORS / emails                  |
 | `REDIS_URL`                         | Redis 7+ for rate limiting (host apps)        |
 | `TRUST_PROXY_HOPS`                  | Proxies in front of the API (default `0`)     |
+| `SEED_PASSWORD`                     | Password for `db:seed` accounts (never prod)  |
 
 ## Tooling
 
