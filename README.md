@@ -1,5 +1,7 @@
 # QMS
 
+[![CI](https://github.com/SuprimKhatri77/qms/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/SuprimKhatri77/qms/actions/workflows/ci.yml)
+
 **Queue Management System** — 4th-semester project (Nepal).
 
 ## About
@@ -227,6 +229,7 @@ Copy [`.env.example`](.env.example) → `.env.local` at the repo root (used by C
 
 - **Husky** — pre-commit runs lint-staged (Prettier); pre-push runs typecheck + build
 - **Turbo** — task orchestration and caching
+- **GitHub Actions** — on every PR and push to `main`, [CI](.github/workflows/ci.yml) runs typecheck, lint, unit tests, migrations + integration tests against a fresh Postgres and Redis, and a full build
 - **TypeScript** everywhere
 
 ## License

@@ -13,9 +13,12 @@
     "check-types": {
       "dependsOn": ["^check-types"]
     },
-    "test": {},
+    "test": {
+      "passThroughEnv": ["REDIS_URL"]
+    },
     "test:integration": {
-      "cache": false
+      "cache": false,
+      "passThroughEnv": ["DATABASE_URL"]
     },
     "dev": {
       "cache": false,

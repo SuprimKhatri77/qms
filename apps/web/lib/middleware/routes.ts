@@ -1,6 +1,14 @@
-import { ROLE_RULES, UNAUTHENTICATED_ONLY_ROUTES } from "./config";
+import {
+  AUTH_ROUTES_OPEN_TO_EVERYONE,
+  ROLE_RULES,
+  UNAUTHENTICATED_ONLY_ROUTES,
+} from "./config";
 
 export function isUnauthenticatedOnlyRoute(pathname: string): boolean {
+  if (AUTH_ROUTES_OPEN_TO_EVERYONE.includes(pathname)) {
+    return false;
+  }
+
   return UNAUTHENTICATED_ONLY_ROUTES.some((route) =>
     pathname.startsWith(route),
   );

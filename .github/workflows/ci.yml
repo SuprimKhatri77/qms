@@ -1,0 +1,108 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# A new push to a PR makes its older run pointless, so cancel it. Runs on
+# main are left to finish, so every commit on main gets a result.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+# The job only reads the code; it never writes to the repo.
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    # Real Postgres and Redis for the tests that need them. Each run gets
+    # fresh, empty containers, so the integration tests start from a clean
+    # database after the migrations run.
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: qms_ci
+        ports:
+          - 5432:5432
+        # Steps start only once the health check passes, so the migration
+        # step never races the database starting up.
+        options: >-
+          --health-cmd "pg_isready -U postgres -d qms_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    # The .env files are gitignored, so CI sets everything here instead.
+    # The API's dotenv call only fills in variables that aren't already set,
+    # and a missing .env file is fine, so these values are what the code sees.
+    # NODE_ENV is left unset: `bun test` sets it to "test" and `next build`
+    # sets it to "production" on their own. EMAIL_USER/EMAIL_PASS are left
+    # unset too, so no email is ever sent (the code skips sending without them).
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/qms_ci
+      REDIS_URL: redis://localhost:6379
+      # Dummy value for CI only. It signs nothing real; never use it anywhere else.
+      BETTER_AUTH_SECRET: ci-only-dummy-secret-not-for-any-real-deployment
+      BETTER_AUTH_URL: http://localhost:5000
+      FRONTEND_URL: http://localhost:3000
+      NEXT_PUBLIC_API_URL: http://localhost:5000
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
+      # `bun install` runs the root "prepare" script (husky). Git hooks are
+      # useless on a CI runner, so skip installing them.
+      HUSKY: "0"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Same Bun version as devEngines in the root package.json.
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.9
+
+      # Fails if bun.lock is out of date with package.json, instead of
+      # quietly installing different versions than the ones committed.
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Typecheck
+        run: bun run check-types
+
+      - name: Lint
+        run: bun run lint
+
+      # No Prettier check yet: some files on main aren't formatted, so it
+      # would fail on day one. Pre-commit (lint-staged) formats changed files.
+
+      - name: Unit tests
+        run: bun run test
+
+      # Run from apps/api because the migration script reads ./drizzle
+      # relative to where it's started.
+      - name: Run database migrations
+        working-directory: apps/api
+        run: bun run db:migrate
+
+      # DATABASE_URL reaches the tests because turbo.json lists it in
+      # passThroughEnv for this task (turbo hides undeclared env vars).
+      - name: Integration tests
+        run: bun run test:integration
+
+      - name: Build
+        run: bun run build

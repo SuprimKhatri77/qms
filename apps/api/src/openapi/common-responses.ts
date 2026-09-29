@@ -3,7 +3,7 @@ import { apiErrorResponseSchema } from "@repo/types";
 // Every failure response uses the same { success: false, message, code,
 // errors? } shape (see ErrorCode in @repo/types), so one schema covers all
 // of them — only the description changes per status code.
-function errorResponse(description: string) {
+export function errorResponse(description: string) {
   return {
     description,
     content: { "application/json": { schema: apiErrorResponseSchema } },
