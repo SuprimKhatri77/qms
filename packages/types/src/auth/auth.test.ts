@@ -1,5 +1,12 @@
 import { describe, expect, test } from "bun:test";
-import { loginSchema, signupFormSchema, signupSchema } from "./auth";
+import {
+  forgotPasswordSchema,
+  loginSchema,
+  resetPasswordFormSchema,
+  resetPasswordSchema,
+  signupFormSchema,
+  signupSchema,
+} from "./auth";
 
 describe("loginSchema", () => {
   test("accepts a valid email and password", () => {
@@ -85,5 +92,62 @@ describe("signupFormSchema", () => {
       confirmPassword: "different123",
     });
     expect(result.success).toBe(false);
+  });
+});
+
+describe("forgotPasswordSchema", () => {
+  test("accepts a valid email", () => {
+    const result = forgotPasswordSchema.safeParse({
+      email: "owner@example.com",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  test("rejects an invalid email", () => {
+    const result = forgotPasswordSchema.safeParse({ email: "nope" });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("resetPasswordSchema", () => {
+  test("accepts a token and a valid password", () => {
+    const result = resetPasswordSchema.safeParse({
+      token: "abc123",
+      password: "newpassword1",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  test("rejects an empty token", () => {
+    const result = resetPasswordSchema.safeParse({
+      token: "",
+      password: "newpassword1",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  test("uses the same password bounds as signup", () => {
+    const tooShort = resetPasswordSchema.safeParse({
+      token: "abc123",
+      password: "short",
+    });
+    const tooLong = resetPasswordSchema.safeParse({
+      token: "abc123",
+      password: "a".repeat(51),
+    });
+    expect(tooShort.success).toBe(false);
+    expect(tooLong.success).toBe(false);
+  });
+});
+
+describe("resetPasswordFormSchema", () => {
+  test("rejects passwords that don't match, on confirmPassword", () => {
+    const result = resetPasswordFormSchema.safeParse({
+      token: "abc123",
+      password: "newpassword1",
+      confirmPassword: "different12",
+    });
+    expect(result.success).toBe(false);
+    expect(result.error?.issues[0]?.path).toEqual(["confirmPassword"]);
   });
 });
