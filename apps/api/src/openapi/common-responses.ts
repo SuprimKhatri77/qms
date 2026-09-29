@@ -30,7 +30,7 @@ export const duplicateEntry = errorResponse(
 );
 export const tooManyRequests = {
   ...errorResponse(
-    "Too many attempts from this email or IP in a short time (RATE_LIMITED). Wait and retry.",
+    "Too many attempts in a short time (RATE_LIMITED). Limits are counted per email, per IP, or per a combination (e.g. shop + IP), depending on the route. The body's retryAfterSeconds repeats the Retry-After header, for browsers that can't read it cross-origin. Wait and retry.",
   ),
   headers: {
     "Retry-After": {
