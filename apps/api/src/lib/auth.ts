@@ -58,19 +58,12 @@ export const auth = betterAuth({
       });
     },
   },
+  // Owners aren't asked to verify their email: nothing in the app reads
+  // emailVerified, and the password-reset email is what proves an owner
+  // controls the address when it actually matters. So no email is sent on
+  // signup (it used to be, with a link to a page that didn't exist).
   emailVerification: {
-    autoSignInAfterVerification: true,
-    sendOnSignUp: true,
-    expiresIn: 900,
-    sendVerificationEmail: async ({ user, url, token }, request) => {
-      const customVerificationURL = `${process.env.FRONTEND_URL}/verify/email?token=${token}`;
-      await sendMail({
-        to: user.email,
-        subject: "Verify your email",
-        text: `Click the link to verify your email: ${url}`,
-        html: `<p>Click the link to verify your email:</p><a href="${customVerificationURL}">${customVerificationURL}</a>`,
-      });
-    },
+    sendOnSignUp: false,
   },
 
   advanced: {
