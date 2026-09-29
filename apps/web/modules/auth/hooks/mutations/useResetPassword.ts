@@ -23,8 +23,9 @@ export const useResetPassword = () => {
     onSuccess: (result) => {
       toast.success(result.message);
       // Every session was signed out by the reset, so the owner logs in
-      // again with the new password.
-      router.push("/auth/login");
+      // again with the new password. replace, not push: the back button
+      // shouldn't return to a page holding a now-used token.
+      router.replace("/auth/login");
     },
     onError: (error) => {
       // Both are shown on the page itself: a countdown for a rate limit,

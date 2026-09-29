@@ -22,6 +22,12 @@ import { useResetPassword } from "./hooks/mutations/useResetPassword";
 
 type PasswordField = "password" | "confirmPassword";
 
+// The reset limit is counted per IP, not per link, so the countdown is
+// keyed to this browser rather than to the token: a fresh link opened
+// while blocked still shows the wait, and the token itself is never written
+// to localStorage.
+const RATE_LIMIT_SUBJECT = "this-browser";
+
 // `token` comes from the emailed link's ?token=. null when the link was
 // opened without one, which can only be a broken or hand-edited link.
 export function ResetPasswordForm({ token }: { token: string | null }) {
@@ -63,7 +69,7 @@ export function ResetPasswordForm({ token }: { token: string | null }) {
 
         const retryAfter = getRetryAfterSeconds(error);
         if (retryAfter !== null) {
-          retryCountdown.start(retryAfter, value.token);
+          retryCountdown.start(retryAfter, RATE_LIMIT_SUBJECT);
         }
       }
     },
@@ -91,7 +97,7 @@ export function ResetPasswordForm({ token }: { token: string | null }) {
     );
   }
 
-  const secondsLeft = retryCountdown.secondsLeftFor(token);
+  const secondsLeft = retryCountdown.secondsLeftFor(RATE_LIMIT_SUBJECT);
 
   return (
     <form
@@ -177,7 +183,11 @@ export function ResetPasswordForm({ token }: { token: string | null }) {
       <Button
         type="submit"
         className="h-10 w-full"
-        disabled={resetPassword.isPending || secondsLeft > 0}
+        // Stays disabled after success while the login page loads: a second
+        // click would send the now-used token and flash "invalid link".
+        disabled={
+          resetPassword.isPending || resetPassword.isSuccess || secondsLeft > 0
+        }
       >
         {resetPassword.isPending ? (
           <span className="inline-flex items-center gap-2">
