@@ -14,6 +14,8 @@ export const ErrorCode = {
   CONFLICT: "CONFLICT",
   DUPLICATE_ENTRY: "DUPLICATE_ENTRY",
   INVALID_REQUEST_PARAMS: "INVALID_REQUEST_PARAMS",
+  // A single-use emailed link (e.g. password reset) is unknown, used or expired
+  INVALID_TOKEN: "INVALID_TOKEN",
   // Too many requests in a short time; the Retry-After header says how long to wait
   RATE_LIMITED: "RATE_LIMITED",
 } as const;

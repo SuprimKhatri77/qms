@@ -1,8 +1,12 @@
 import api from "@/lib/axios";
 import {
+  ForgotPasswordRequest,
+  ForgotPasswordResponse,
   LoginRequest,
   LoginResponse,
   LogoutResponse,
+  ResetPasswordRequest,
+  ResetPasswordResponse,
   SignupRequest,
   SignupResponse,
 } from "@repo/types";
@@ -19,5 +23,25 @@ export const signup = async (data: SignupRequest): Promise<SignupResponse> => {
 
 export const logout = async (): Promise<LogoutResponse> => {
   const res = await api.post<LogoutResponse>("/auth/logout");
+  return res.data;
+};
+
+export const forgotPassword = async (
+  data: ForgotPasswordRequest,
+): Promise<ForgotPasswordResponse> => {
+  const res = await api.post<ForgotPasswordResponse>(
+    "/auth/forgot-password",
+    data,
+  );
+  return res.data;
+};
+
+export const resetPassword = async (
+  data: ResetPasswordRequest,
+): Promise<ResetPasswordResponse> => {
+  const res = await api.post<ResetPasswordResponse>(
+    "/auth/reset-password",
+    data,
+  );
   return res.data;
 };
