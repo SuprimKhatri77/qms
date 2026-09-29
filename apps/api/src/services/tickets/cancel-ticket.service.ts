@@ -1,6 +1,6 @@
 import { and, eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
-import { tickets } from "@/db/schema";
+import { queues, tickets } from "@/db/schema";
 import type { ApiErrorResponse, PublicTicketResponse } from "@repo/types";
 import { ErrorCode } from "@repo/types";
 import { logEvent } from "@/lib/system-logs/log-event";
@@ -23,20 +23,45 @@ export async function cancelTicket(
   ticketId: string,
 ): Promise<PublicTicketResponse | ApiErrorResponse> {
   try {
-    // The status rule lives in the WHERE clause, so checking and changing
-    // happen in one statement: a double tap, or the owner calling this
-    // ticket at the same moment, can't produce a cancelled-while-serving
-    // ticket.
-    const [cancelled] = await db
-      .update(tickets)
-      .set({ status: "cancelled", resolvedAt: new Date() })
-      .where(
-        and(
-          eq(tickets.id, ticketId),
-          inArray(tickets.status, CANCELLABLE_STATUSES),
-        ),
-      )
-      .returning({ id: tickets.id });
+    const cancelled = await db.transaction(async (tx) => {
+      // Lock this ticket's queue row first, the same lock join and call-next
+      // take. Without it, call-next could pick this ticket as "next waiting",
+      // then this cancel could commit, and call-next's update would still
+      // turn the now-cancelled ticket into "serving". With it, one of the two
+      // waits for the other to finish, and the loser sees the real status.
+      // A ticket never moves between queues, so reading its queue id first,
+      // unlocked, is safe.
+      const [ticket] = await tx
+        .select({ queueId: tickets.queueId })
+        .from(tickets)
+        .where(eq(tickets.id, ticketId))
+        .limit(1);
+
+      if (!ticket) {
+        return false;
+      }
+
+      await tx
+        .select({ id: queues.id })
+        .from(queues)
+        .where(eq(queues.id, ticket.queueId))
+        .for("update");
+
+      // The status rule lives in the WHERE clause, so a double tap can't
+      // cancel twice, and a ticket the owner has just called stays served.
+      const [updated] = await tx
+        .update(tickets)
+        .set({ status: "cancelled", resolvedAt: new Date() })
+        .where(
+          and(
+            eq(tickets.id, ticketId),
+            inArray(tickets.status, CANCELLABLE_STATUSES),
+          ),
+        )
+        .returning({ id: tickets.id });
+
+      return Boolean(updated);
+    });
 
     if (!cancelled) {
       return await explainWhyNotCancelled(ticketId);

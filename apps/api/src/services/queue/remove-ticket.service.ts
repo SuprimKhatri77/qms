@@ -1,4 +1,4 @@
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { queues, tickets } from "@/db/schema";
 import type { ApiErrorResponse, QueueSnapshotResponse } from "@repo/types";
@@ -32,30 +32,44 @@ export async function removeTicket(
       };
     }
 
-    // Same single guarded UPDATE as resolveTicket:
-    //  - the ticket must belong to one of THIS shop's queues (tenant isolation),
-    //  - and it must currently be "waiting". A customer being served is
-    //    finished with done/no-show instead, and an unconfirmed ticket never
-    //    shows on the dashboard, so neither can be removed here.
-    // Check and change in one statement, so a double-click (or call-next
-    // picking this customer at the same moment) can't slip in between.
-    const [removed] = await db
-      .update(tickets)
-      .set({ status: "cancelled", resolvedAt: new Date() })
-      .where(
-        and(
-          eq(tickets.id, ticketId),
-          eq(tickets.status, "waiting"),
-          inArray(
-            tickets.queueId,
-            db
-              .select({ id: queues.id })
-              .from(queues)
-              .where(eq(queues.shopId, shop.id)),
-          ),
-        ),
-      )
-      .returning({ id: tickets.id });
+    const removed = await db.transaction(async (tx) => {
+      // Only a ticket in one of THIS shop's queues is looked at (tenant
+      // isolation), so another shop's ticket id finds nothing and never
+      // touches that shop's queue.
+      const [ticket] = await tx
+        .select({ queueId: tickets.queueId })
+        .from(tickets)
+        .innerJoin(queues, eq(queues.id, tickets.queueId))
+        .where(and(eq(tickets.id, ticketId), eq(queues.shopId, shop.id)))
+        .limit(1);
+
+      if (!ticket) {
+        return false;
+      }
+
+      // Lock the queue row before changing the ticket: the same lock join
+      // and call-next take (see cancel-ticket.service.ts for the race this
+      // prevents: a ticket removed while call-next is picking it must not
+      // end up "serving"). A ticket never moves between queues, so reading
+      // its queue id first, unlocked, is safe.
+      await tx
+        .select({ id: queues.id })
+        .from(queues)
+        .where(eq(queues.id, ticket.queueId))
+        .for("update");
+
+      // Only a customer still "waiting" can be removed. One being served is
+      // finished with done/no-show instead, and an unconfirmed ticket never
+      // shows on the dashboard. Checked in the WHERE clause, after the lock,
+      // so a double-click can't remove twice.
+      const [updated] = await tx
+        .update(tickets)
+        .set({ status: "cancelled", resolvedAt: new Date() })
+        .where(and(eq(tickets.id, ticketId), eq(tickets.status, "waiting")))
+        .returning({ id: tickets.id });
+
+      return Boolean(updated);
+    });
 
     if (!removed) {
       return {

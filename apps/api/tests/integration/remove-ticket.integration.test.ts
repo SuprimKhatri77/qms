@@ -12,6 +12,7 @@ import {
   createTestShop,
   deleteTestOwner,
   joinAndVerify,
+  raceAgainstCallingTicket,
   testCustomerEmail,
 } from "./support/fixtures";
 import type { Shop } from "@repo/types";
@@ -138,6 +139,23 @@ describe("owner removes a waiting customer", () => {
     expect(second.success).toBe(false);
     if (second.success) return;
     expect(second.code).toBe("NOT_FOUND");
+  });
+
+  test("a remove racing call-next waits for it, and the called customer stays served", async () => {
+    const ticketId = await joinAndVerify(
+      shop.slug,
+      "Racer",
+      testCustomerEmail("racer"),
+    );
+
+    const { result, finishedWhileLocked } = await raceAgainstCallingTicket(
+      ticketId,
+      () => removeTicket(ownerId, ticketId),
+    );
+
+    expect(finishedWhileLocked).toBe(false);
+    expect(result.success).toBe(false);
+    expect((await readTicketStatus(ticketId))?.status).toBe("serving");
   });
 
   test("an unknown ticket id is NOT_FOUND", async () => {

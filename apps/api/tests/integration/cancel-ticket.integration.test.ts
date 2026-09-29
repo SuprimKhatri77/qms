@@ -11,9 +11,10 @@ import {
   createTestShop,
   deleteTestOwner,
   joinAndVerify,
+  raceAgainstCallingTicket,
   testCustomerEmail,
 } from "./support/fixtures";
-import type { Shop } from "@repo/types";
+import { ErrorCode, type Shop } from "@repo/types";
 
 describe("customer leaves the queue", () => {
   let ownerId: string;
@@ -116,6 +117,31 @@ describe("customer leaves the queue", () => {
     expect(second.success).toBe(false);
     if (second.success) return;
     expect(second.code).toBe("CONFLICT");
+  });
+
+  test("a cancel racing call-next waits for it, and the called customer stays served", async () => {
+    const ticketId = await joinAndVerify(
+      shop.slug,
+      "Racer",
+      testCustomerEmail("racer"),
+    );
+
+    const { result, finishedWhileLocked } = await raceAgainstCallingTicket(
+      ticketId,
+      () => cancelTicket(ticketId),
+    );
+
+    expect(finishedWhileLocked).toBe(false);
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.code).toBe(ErrorCode.CONFLICT);
+    }
+
+    const [row] = await db
+      .select({ status: tickets.status })
+      .from(tickets)
+      .where(eq(tickets.id, ticketId));
+    expect(row?.status).toBe("serving");
   });
 
   test("an unknown ticket id is NOT_FOUND", async () => {
