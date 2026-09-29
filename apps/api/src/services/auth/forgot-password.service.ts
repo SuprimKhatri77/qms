@@ -14,11 +14,14 @@ const SENT_MESSAGE =
 /**
  * Emails a password-reset link to the owner, if the email has an account.
  *
- * The response is the same either way, so this can't be used to find out
- * which emails are signed up. Better Auth does the same on its side: for an
- * unknown email it runs a dummy lookup instead of returning early, and the
- * email itself is sent without being waited on (see sendResetPassword in
- * lib/auth.ts), so a real account doesn't answer noticeably slower.
+ * The response is the same either way, so this endpoint doesn't tell anyone
+ * which emails are signed up. (Signup still does, by refusing a taken
+ * email; a signup form can't avoid that.) Better Auth helps on its side: for
+ * an unknown email it runs a dummy lookup instead of returning early. A real
+ * account still does one extra database write, a few milliseconds, which
+ * the rate limits make impractical to measure. The email itself is sent
+ * without being waited on (see sendResetPassword in lib/auth.ts), so the
+ * mail server's speed or failure never shows in the response.
  */
 export async function forgotPassword(
   data: ForgotPasswordRequest,

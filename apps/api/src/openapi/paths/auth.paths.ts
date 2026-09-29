@@ -10,6 +10,7 @@ import { registry, SESSION_COOKIE_AUTH } from "../registry";
 import { apiSuccessSchema } from "../schemas";
 import {
   badRequest,
+  errorResponse,
   duplicateEntry,
   serverError,
   tooManyRequests,
@@ -101,7 +102,7 @@ registry.registerPath({
   tags: ["Auth"],
   summary: "Email a password-reset link",
   description:
-    "Always answers 200 with the same message, whether or not the email has an account, so it can't be used to find out who is signed up. If it does, the owner gets a link to /auth/reset-password?token=… on the web app, valid for 15 minutes. Shares its rate limit with Better Auth's own /api/auth/request-password-reset.",
+    "Always answers 200 with the same message, whether or not the email has an account, so this endpoint doesn't reveal who is signed up. If it does, the owner gets a link to /auth/reset-password?token=… on the web app, valid for 15 minutes. Shares its rate limit with Better Auth's own /api/auth/request-password-reset.",
   request: {
     body: {
       content: { "application/json": { schema: forgotPasswordSchema } },
@@ -124,7 +125,7 @@ registry.registerPath({
   tags: ["Auth"],
   summary: "Set a new password from a reset link",
   description:
-    "The token from the emailed link works once. An unknown, used or expired token fails with 400 INVALID_TOKEN. On success every existing session for the account is signed out and no new one is started: the owner logs in with the new password.",
+    "The token from the emailed link works once. An unknown, used or expired token fails with 400 INVALID_TOKEN. On success the account's other outstanding reset links stop working, every existing session is signed out, and no new one is started: the owner logs in with the new password.",
   request: {
     body: {
       content: { "application/json": { schema: resetPasswordSchema } },
@@ -135,7 +136,9 @@ registry.registerPath({
       description: "Password changed; all sessions signed out.",
       content: { "application/json": { schema: messageResponseSchema } },
     },
-    400: badRequest,
+    400: errorResponse(
+      "Validation failed (VALIDATION_FAILED), or the link's token is unknown, used or expired (INVALID_TOKEN).",
+    ),
     429: tooManyRequests,
     500: serverError,
   },

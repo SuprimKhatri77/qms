@@ -46,7 +46,10 @@ export async function resetPassword(
 
     return {
       success: false,
-      message: "Couldn't reset the password. Please try again.",
+      // Better Auth deletes the token before it saves the password, so after
+      // a failure the same link may no longer work: say what to do then.
+      message:
+        "Couldn't reset the password. Try again, and if the link no longer works, request a new one.",
       code: ErrorCode.INTERNAL_SERVER_ERROR,
     };
   }

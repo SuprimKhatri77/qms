@@ -3,7 +3,7 @@ import { apiErrorResponseSchema } from "@repo/types";
 // Every failure response uses the same { success: false, message, code,
 // errors? } shape (see ErrorCode in @repo/types), so one schema covers all
 // of them — only the description changes per status code.
-function errorResponse(description: string) {
+export function errorResponse(description: string) {
   return {
     description,
     content: { "application/json": { schema: apiErrorResponseSchema } },
@@ -11,7 +11,7 @@ function errorResponse(description: string) {
 }
 
 export const badRequest = errorResponse(
-  "Validation failed (VALIDATION_FAILED / INVALID_QUERY_PARAM / INVALID_REQUEST_PARAMS / INVALID_ID_FORMAT), or an emailed link's token is unknown, used or expired (INVALID_TOKEN).",
+  "Validation failed (VALIDATION_FAILED / INVALID_QUERY_PARAM / INVALID_REQUEST_PARAMS / INVALID_ID_FORMAT).",
 );
 export const unauthorized = errorResponse(
   "No session, or the session cookie is missing/expired (UNAUTHORIZED).",
