@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { randomUUID } from "node:crypto";
-import { and, eq, like } from "drizzle-orm";
+import { and, eq, like, ne } from "drizzle-orm";
 import { db } from "@/db";
 import { session, users, verification } from "@/db/schema";
 import { auth } from "@/lib/auth";
@@ -92,6 +92,41 @@ describe("forgot password -> reset password", () => {
     expect(second.success).toBe(false);
     if (!second.success) {
       expect(second.code).toBe(ErrorCode.INVALID_TOKEN);
+    }
+  });
+
+  test("resetting with one link kills the account's other reset links", async () => {
+    await forgotPassword({ email });
+    const firstToken = await getResetToken(userId);
+    await forgotPassword({ email });
+    const [secondRow] = await db
+      .select({ identifier: verification.identifier })
+      .from(verification)
+      .where(
+        and(
+          eq(verification.value, userId),
+          like(verification.identifier, "reset-password:%"),
+          ne(verification.identifier, `reset-password:${firstToken}`),
+        ),
+      );
+    if (!secondRow) {
+      throw new Error("The second request stored no token");
+    }
+    const secondToken = secondRow.identifier.slice("reset-password:".length);
+
+    const used = await resetPassword({
+      token: secondToken,
+      password: NEW_PASSWORD,
+    });
+    const older = await resetPassword({
+      token: firstToken,
+      password: "attacker-password",
+    });
+
+    expect(used.success).toBe(true);
+    expect(older.success).toBe(false);
+    if (!older.success) {
+      expect(older.code).toBe(ErrorCode.INVALID_TOKEN);
     }
   });
 

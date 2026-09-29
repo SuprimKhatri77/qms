@@ -4,6 +4,7 @@ import { adminAc, defaultAc, userAc } from "better-auth/plugins/admin/access";
 import { db } from "@/db";
 import * as schema from "@/db/schema";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { and, eq, like } from "drizzle-orm";
 import { sendMail } from "@/lib/emails/send-email";
 import { logEvent } from "@/lib/system-logs/log-event";
 import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "@repo/types";
@@ -84,6 +85,33 @@ export const auth = betterAuth({
           },
         );
       });
+    },
+    // A reset link only dies when it's used, so asking twice leaves two
+    // working links. Once the password has been reset with one, every other
+    // outstanding link for the account is deleted too: an older email that
+    // someone else gets hold of later can't reset the password again.
+    // Better Auth runs this after saving the new password and before it
+    // signs every session out; a failure here is logged but must not stop
+    // that sign-out, and the leftover links still expire within 15 minutes.
+    onPasswordReset: async ({ user }) => {
+      try {
+        await db
+          .delete(schema.verification)
+          .where(
+            and(
+              eq(schema.verification.value, user.id),
+              like(schema.verification.identifier, "reset-password:%"),
+            ),
+          );
+      } catch (error) {
+        console.error("onPasswordReset failed:", error);
+        logEvent(
+          "error",
+          "password-reset",
+          "Couldn't delete the account's other reset links",
+          { userId: user.id, error: String(error) },
+        );
+      }
     },
   },
   // Owners aren't asked to verify their email: nothing in the app reads
