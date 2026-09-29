@@ -102,9 +102,10 @@ export const authEmailRules: RateLimitRule[] = [
   },
 ];
 
-// Setting a new password from a reset link. The token is 24 random
-// characters and dies after one use or 15 minutes, so guessing one is
-// already infeasible. Like verifyRules, this only stops anyone hammering it.
+// Setting a new password from a reset link, on our route and Better Auth's
+// own ones (see index.ts). The token is 24 random characters and dies after
+// one use or 15 minutes, so guessing one is already infeasible. Like
+// verifyRules, this only stops anyone hammering them.
 export const resetPasswordRules: RateLimitRule[] = [
   {
     name: "reset-password-ip",
