@@ -1,7 +1,7 @@
-import { and, count, eq, lt, sql } from "drizzle-orm";
+import { and, count, eq, gte, lt, sql } from "drizzle-orm";
 import type { CreateShopRequest } from "@repo/types";
 import { db } from "@/db";
-import { queues, tickets, users } from "@/db/schema";
+import { account, queues, tickets, users } from "@/db/schema";
 import type { shops } from "@/db/schema";
 import { auth } from "@/lib/auth";
 import { createShop } from "@/services/shops/create-shop.service";
@@ -182,8 +182,18 @@ export async function seedDemoData(password: string): Promise<void> {
     // History and today's queue for the first shop only: one shop with rich
     // data is enough to demo analytics and history.
     if (index === 0) {
-      summary.pastDaysCreated = await seedPastQueues(shop.row);
-      summary.todaysTicketsCreated = await seedTodaysQueue(shop.row);
+      // Today's queue is found first, and its date is what "today" means
+      // for the history too, so a seed running across midnight can't
+      // disagree with itself about which day it is.
+      const todaysQueue = await findOrCreateTodaysQueue(shop.row);
+      summary.todaysTicketsCreated = await seedTodaysQueue(
+        shop.row,
+        todaysQueue,
+      );
+      summary.pastDaysCreated = await seedPastQueues(
+        shop.row,
+        todaysQueue.date,
+      );
     }
   }
 
@@ -201,12 +211,13 @@ async function createDemoUser(input: {
   password: string;
 }): Promise<{ id: string; created: boolean }> {
   const [existing] = await db
-    .select({ id: users.id })
+    .select({ id: users.id, role: users.role })
     .from(users)
     .where(eq(users.email, input.email))
     .limit(1);
 
   if (existing) {
+    await assertUsableDemoUser(existing, input);
     return { id: existing.id, created: false };
   }
 
@@ -222,6 +233,40 @@ async function createDemoUser(input: {
   });
 
   return { id: user.id, created: true };
+}
+
+// An account from an earlier run is reused as it is (it keeps the password
+// it was created with). But it must still be the account the demo expects:
+// the right role, and able to log in. Better Auth creates the user and its
+// password (the "credential" account) in two separate steps, so a crash
+// between them leaves a user nobody can log in as, which a re-run would
+// otherwise skip over silently.
+async function assertUsableDemoUser(
+  existing: { id: string; role: string },
+  expected: { email: string; role: string },
+) {
+  if (existing.role !== expected.role) {
+    throw new Error(
+      `${expected.email} already exists as "${existing.role}", not "${expected.role}". Fix or delete that account, then seed again.`,
+    );
+  }
+
+  const [credential] = await db
+    .select({ id: account.id })
+    .from(account)
+    .where(
+      and(
+        eq(account.userId, existing.id),
+        eq(account.providerId, "credential"),
+      ),
+    )
+    .limit(1);
+
+  if (!credential) {
+    throw new Error(
+      `${expected.email} exists but has no password, so it can't log in. Delete that user, then seed again.`,
+    );
+  }
 }
 
 // Uses the same service as the onboarding form (slug, one-shop-per-owner
@@ -249,25 +294,35 @@ async function createDemoShop(
 }
 
 // Adds a closed queue with tickets for each of the last HISTORY_DAYS days
-// (not today). The queue services only ever work on today's queue, so past
-// days are inserted directly. Returns how many days were added.
-async function seedPastQueues(shop: typeof shops.$inferSelect) {
-  const today = getShopLocalDate(shop.timezone);
+// (not today) that doesn't have a queue yet. So a seed run weeks later
+// fills in the recent days again, and days that already have a queue (from
+// an earlier seed or from real use) are left alone. The queue services only
+// ever work on today's queue, so past days are inserted directly. Returns
+// how many days were added.
+async function seedPastQueues(shop: typeof shops.$inferSelect, today: string) {
+  const firstDay = addDays(today, -HISTORY_DAYS);
 
-  const [olderQueues] = await db
-    .select({ total: count() })
+  const existingQueues = await db
+    .select({ date: queues.date })
     .from(queues)
-    .where(and(eq(queues.shopId, shop.id), lt(queues.date, today)));
+    .where(
+      and(
+        eq(queues.shopId, shop.id),
+        gte(queues.date, firstDay),
+        lt(queues.date, today),
+      ),
+    );
+  const daysWithAQueue = new Set(existingQueues.map((queue) => queue.date));
 
-  if ((olderQueues?.total ?? 0) > 0) {
-    return 0;
-  }
+  let daysAdded = 0;
 
-  // One transaction, so a failure halfway leaves no partial history behind
-  // (which the check above would then mistake for "already seeded").
+  // One transaction, so a failure halfway leaves no partial history behind.
   await db.transaction(async (tx) => {
     for (let dayIndex = 0; dayIndex < HISTORY_DAYS; dayIndex++) {
-      const date = addDays(today, dayIndex - HISTORY_DAYS);
+      const date = addDays(firstDay, dayIndex);
+      if (daysWithAQueue.has(date)) {
+        continue;
+      }
       const plan = planDayTickets(dayIndex, shop.avgServiceMinutes);
 
       const [queue] = await tx
@@ -297,6 +352,8 @@ async function seedPastQueues(shop: typeof shops.$inferSelect) {
         plan.map((ticket) => ({
           queueId: queue.id,
           tokenNumber: ticket.tokenNumber,
+          // Shifted by the day, so each day's list starts with a different
+          // name instead of every day starting with the same customer.
           customerName: customerName(ticket.tokenNumber + dayIndex),
           // Unique per day and token, so no two demo customers share an email.
           customerEmail: `customer-${date}-${ticket.tokenNumber}@customer.palo.test`,
@@ -318,10 +375,11 @@ async function seedPastQueues(shop: typeof shops.$inferSelect) {
           ),
         })),
       );
+      daysAdded++;
     }
   });
 
-  return HISTORY_DAYS;
+  return daysAdded;
 }
 
 // Works out one past day's tickets with a fixed pattern (no randomness), so
@@ -334,6 +392,8 @@ function planDayTickets(
   dayIndex: number,
   avgServiceMinutes: number,
 ): PlannedTicket[] {
+  // (dayIndex * 3) % 7 steps through 0, 3, 6, 2, 5, 1, 4, so over a week
+  // the days have 8, 11, 14, 10, 13, 9 and 12 customers.
   const ticketCount = 8 + ((dayIndex * 3) % 7);
 
   const planned: PlannedTicket[] = [];
@@ -427,9 +487,10 @@ function shopLocalTimestamp(
 // A few customers waiting in today's queue, so the owner's dashboard has
 // someone to call. Skipped if today's queue already has tickets (seeded
 // earlier, or real customers) or the owner has closed it.
-async function seedTodaysQueue(shop: typeof shops.$inferSelect) {
-  const queue = await findOrCreateTodaysQueue(shop);
-
+async function seedTodaysQueue(
+  shop: typeof shops.$inferSelect,
+  queue: typeof queues.$inferSelect,
+) {
   if (queue.status !== "active") {
     return 0;
   }
@@ -446,14 +507,23 @@ async function seedTodaysQueue(shop: typeof shops.$inferSelect) {
   const waitingCount = 4;
   const now = Date.now();
   const minutes = (n: number) => n * 60 * 1000;
+  // Nobody can have joined today's queue before the shop's midnight, so
+  // just after midnight the join times are pulled up to it.
+  const startOfToday = await shopLocalMidnight(queue.date, shop.timezone);
 
   // Tokens start at 1: the queue is empty (checked above), and joinQueue
   // continues from the highest token, so real customers get 5, 6, ...
   // Stored as JS Dates, the same way the ticket services write their times.
   await db.insert(tickets).values(
     Array.from({ length: waitingCount }, (_, i) => {
-      // Joined 8 minutes apart, the last one 5 minutes ago.
-      const joinedAt = now - minutes(5 + (waitingCount - 1 - i) * 8);
+      // Joined 8 minutes apart, the last one 5 minutes ago:
+      // 29, 21, 13 and 5 minutes ago.
+      const minutesAgo = 5 + (waitingCount - 1 - i) * 8;
+      const joinedAt = Math.max(now - minutes(minutesAgo), startOfToday);
+      const verifiedAt = Math.min(
+        joinedAt + minutes(VERIFY_DELAY_MINUTES),
+        now,
+      );
       return {
         queueId: queue.id,
         tokenNumber: i + 1,
@@ -461,12 +531,29 @@ async function seedTodaysQueue(shop: typeof shops.$inferSelect) {
         customerEmail: `today-${i + 1}@customer.palo.test`,
         status: "waiting" as const,
         createdAt: new Date(joinedAt),
-        verifiedAt: new Date(joinedAt + minutes(VERIFY_DELAY_MINUTES)),
+        verifiedAt: new Date(verifiedAt),
       };
     }),
   );
 
   return waitingCount;
+}
+
+// The instant a shop-local day starts, in milliseconds. Postgres does the
+// timezone conversion, as in shopLocalTimestamp. The ::timestamp matters:
+// on a bare date, AT TIME ZONE would first read the date in the database
+// session's timezone and give a different instant.
+async function shopLocalMidnight(
+  date: string,
+  timezone: string,
+): Promise<number> {
+  const [row] = await db.execute<{ midnight: Date }>(
+    sql`select ((${date}::date)::timestamp AT TIME ZONE ${timezone}) as midnight`,
+  );
+  if (!row) {
+    throw new Error(`Could not work out midnight of ${date} in ${timezone}`);
+  }
+  return new Date(row.midnight).getTime();
 }
 
 function printSummary(summary: SeedSummary) {
@@ -476,7 +563,8 @@ function printSummary(summary: SeedSummary) {
   console.log(`  past queue days added:  ${summary.pastDaysCreated}`);
   console.log(`  today's tickets added:  ${summary.todaysTicketsCreated}`);
   console.log("");
-  console.log("Logins (password: the SEED_PASSWORD you set):");
+  console.log("Logins (password: the SEED_PASSWORD you set when each account");
+  console.log("was first created; accounts that already existed keep theirs):");
   console.log(`  ${SUPERADMIN.email}  (superadmin)`);
   for (const owner of DEMO_OWNERS) {
     console.log(`  ${owner.email}  (owner of ${owner.shop.name})`);
