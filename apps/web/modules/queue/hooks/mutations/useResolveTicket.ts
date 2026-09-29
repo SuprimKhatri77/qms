@@ -21,6 +21,10 @@ export const useResolveTicket = () => {
   >({
     mutationFn: ({ ticketId, outcome }) =>
       outcome === "done" ? markDone(ticketId) : markNoShow(ticketId),
+    // A 5-second poll that is already on its way could land after this
+    // action's response and put the older queue back on screen. Cancelling
+    // it first means the newest snapshot (this action's) is the one shown.
+    onMutate: () => queryClient.cancelQueries({ queryKey: SHOP_QUEUE_KEY }),
     onSuccess: (result) => {
       queryClient.setQueryData(SHOP_QUEUE_KEY, result);
     },
