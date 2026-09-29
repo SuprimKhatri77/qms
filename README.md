@@ -61,7 +61,7 @@ Turborepo monorepo with Bun: Next.js frontend and Express API backed by PostgreS
 - Redis-backed limits on login, signup, Better Auth's email-sending routes, and joining a queue / verifying a ticket. Every limit is in [`apps/api/src/lib/rate-limit/rules.ts`](apps/api/src/lib/rate-limit/rules.ts)
 - Blocked requests get `429` with code `RATE_LIMITED` and a `Retry-After` header
 - If Redis is unreachable, requests are let through (rate limiting is off) and the outage is written to the admin system logs
-- Joining also sets a `palo_device` cookie, and one device can hold at most 2 active tickets in the same queue (`409 CONFLICT` beyond that). It's a soft signal: clearing cookies resets it, so email verification and the limits above are the real defenses
+- Joining also sets a one-day `palo_device` cookie, and one device can hold at most 2 active tickets in the same queue (`409 CONFLICT` beyond that). It's a soft signal: clearing cookies resets it, so email verification and the limits above are the real defenses. The tokens are wiped from tickets once their queue is finished
 
 ## Prerequisites
 

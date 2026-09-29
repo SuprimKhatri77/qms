@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   DEVICE_COOKIE_NAME,
+  deviceCookieOptions,
   newDeviceToken,
   readDeviceToken,
 } from "./device-token";
@@ -60,5 +61,27 @@ describe("readDeviceToken", () => {
     ["a huge value", `palo_device=${"a".repeat(5000)}`],
   ])("rejects %s", (_label, header) => {
     expect(readDeviceToken(header)).toBeNull();
+  });
+});
+
+describe("readDeviceToken with duplicate cookies", () => {
+  test("a malformed copy first doesn't hide a valid one after it", () => {
+    const header = `palo_device=junk; palo_device=${VALID_TOKEN}`;
+    expect(readDeviceToken(header)).toBe(VALID_TOKEN);
+  });
+
+  test("the first valid copy wins", () => {
+    const other = "fedcba9876543210fedcba9876543210";
+    const header = `palo_device=${VALID_TOKEN}; palo_device=${other}`;
+    expect(readDeviceToken(header)).toBe(VALID_TOKEN);
+  });
+});
+
+describe("deviceCookieOptions", () => {
+  test("keeps the cookie for one day, out of page scripts' reach", () => {
+    expect(deviceCookieOptions.maxAge).toBe(24 * 60 * 60 * 1000);
+    expect(deviceCookieOptions.httpOnly).toBe(true);
+    expect(deviceCookieOptions.sameSite).toBe("lax");
+    expect(deviceCookieOptions.path).toBe("/api/v1/public");
   });
 });

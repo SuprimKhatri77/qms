@@ -23,8 +23,9 @@ export async function joinQueueController(
   // keeps the cookie, this ticket counts toward its next joins.
   const deviceToken = readDeviceToken(req.headers.cookie) ?? newDeviceToken();
 
-  // Always (re)set the cookie: a first-time visitor gets one to bring back
-  // next time, and a returning one gets its expiry pushed out another year.
+  // Always (re)set the cookie, whatever the join's outcome: a first-time
+  // visitor gets one to bring back next time, and a returning one gets its
+  // one-day expiry pushed out.
   res.cookie(DEVICE_COOKIE_NAME, deviceToken, deviceCookieOptions);
 
   const result = await joinQueue(req.params.slug, req.body, deviceToken);
