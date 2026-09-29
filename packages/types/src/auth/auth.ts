@@ -81,3 +81,39 @@ export type LogoutResponse = {
   success: true;
   message: string;
 };
+
+// Body of POST /auth/forgot-password.
+export const forgotPasswordSchema = z.object({ email: emailSchema });
+
+export type ForgotPasswordRequest = z.infer<typeof forgotPasswordSchema>;
+
+// Same response whether or not the email has an account, so the endpoint
+// can't be used to find out who is signed up.
+export type ForgotPasswordResponse = {
+  success: true;
+  message: string;
+};
+
+// Body of POST /auth/reset-password. The token comes from the emailed link.
+export const resetPasswordSchema = z.object({
+  token: z
+    .string({ error: "Reset link is missing its token" })
+    .min(1, { error: "Reset link is missing its token" }),
+  password: passwordSchema,
+});
+
+export type ResetPasswordRequest = z.infer<typeof resetPasswordSchema>;
+
+export const resetPasswordFormSchema = resetPasswordSchema
+  .extend({ confirmPassword: confirmPasswordSchema })
+  .refine((data) => data.password === data.confirmPassword, {
+    error: "Passwords do not match",
+    path: ["confirmPassword"],
+  });
+
+export type ResetPasswordFormValues = z.infer<typeof resetPasswordFormSchema>;
+
+export type ResetPasswordResponse = {
+  success: true;
+  message: string;
+};

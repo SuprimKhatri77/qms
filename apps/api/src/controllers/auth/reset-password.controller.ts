@@ -1,0 +1,19 @@
+import type { Request, Response } from "express";
+import type {
+  ApiErrorResponse,
+  ResetPasswordRequest,
+  ResetPasswordResponse,
+} from "@repo/types";
+import { statusForErrorCode } from "@/lib/http-status";
+import { resetPassword } from "@/services/auth/reset-password.service";
+
+export async function resetPasswordController(
+  req: Request<{}, {}, ResetPasswordRequest>,
+  res: Response<ResetPasswordResponse | ApiErrorResponse>,
+) {
+  const result = await resetPassword(req.body);
+
+  return res
+    .status(result.success ? 200 : statusForErrorCode(result.code))
+    .json(result);
+}

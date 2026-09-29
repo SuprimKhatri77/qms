@@ -14,6 +14,7 @@ import {
 import {
   authEmailRules,
   loginRules,
+  resetPasswordRules,
   signupRules,
 } from "./lib/rate-limit/rules";
 
@@ -57,6 +58,11 @@ app.post(
   ["/api/auth/request-password-reset", "/api/auth/send-verification-email"],
   parseAuthBody,
   rateLimit(authEmailRules),
+);
+app.post(
+  "/api/auth/reset-password",
+  parseAuthBody,
+  rateLimit(resetPasswordRules),
 );
 app.all("/api/auth/{*any}", toNodeHandler(auth));
 app.use(express.json());

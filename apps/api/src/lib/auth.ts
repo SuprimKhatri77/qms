@@ -5,6 +5,7 @@ import { db } from "@/db";
 import * as schema from "@/db/schema";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { sendMail } from "@/lib/emails/send-email";
+import { logEvent } from "@/lib/system-logs/log-event";
 import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "@repo/types";
 
 const superadminAc = defaultAc.newRole({
@@ -53,13 +54,35 @@ export const auth = betterAuth({
     minPasswordLength: PASSWORD_MIN_LENGTH,
     maxPasswordLength: PASSWORD_MAX_LENGTH,
     resetPasswordTokenExpiresIn: 900,
-    sendResetPassword: async ({ user, url, token }, request) => {
-      const customForgotPasswordURL = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
-      await sendMail({
+    // Resetting the password logs out every existing session, so someone who
+    // had got hold of the owner's session loses it along with the old password.
+    revokeSessionsOnPasswordReset: true,
+    sendResetPassword: async ({ user, token }) => {
+      // Our own page, not Better Auth's `url` (which points at the API): the
+      // web app shows the form and posts the token to /api/v1/auth/reset-password.
+      const resetUrl = `${process.env.FRONTEND_URL}/auth/reset-password?token=${encodeURIComponent(token)}`;
+
+      // Not awaited, like the queue emails. Waiting on the mail server would
+      // make a request for a real account slower than one for an unknown
+      // email (which sends nothing), and a failed send would turn into an
+      // error only real accounts can trigger. Either would reveal which
+      // emails are signed up. A failure is logged for the admin instead.
+      sendMail({
         to: user.email,
-        subject: "Reset your password",
-        text: `Click the link to reset your password: ${customForgotPasswordURL}`,
-        html: `<p>Click the link to reset your password:</p><a href="${customForgotPasswordURL}">${customForgotPasswordURL}</a>`,
+        subject: "Reset your Queueup password",
+        text: `Someone asked to reset the password for this account. If it was you, open this link within 15 minutes: ${resetUrl}\n\nIf it wasn't you, ignore this email; your password hasn't changed.`,
+        html: `<p>Someone asked to reset the password for this account. If it was you, open this link within 15 minutes:</p><p><a href="${resetUrl}">Reset my password</a></p><p>If it wasn't you, ignore this email; your password hasn't changed.</p>`,
+      }).catch((error) => {
+        console.error("sendResetPassword failed:", error);
+        logEvent(
+          "error",
+          "password-reset-email",
+          "Failed to send password reset email",
+          {
+            userId: user.id,
+            error: String(error),
+          },
+        );
       });
     },
   },

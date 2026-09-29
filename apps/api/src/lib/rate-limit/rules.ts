@@ -102,6 +102,18 @@ export const authEmailRules: RateLimitRule[] = [
   },
 ];
 
+// Setting a new password from a reset link. The token is 24 random
+// characters and dies after one use or 15 minutes, so guessing one is
+// already infeasible. Like verifyRules, this only stops anyone hammering it.
+export const resetPasswordRules: RateLimitRule[] = [
+  {
+    name: "reset-password-ip",
+    limit: 30,
+    windowSeconds: 10 * MINUTE,
+    identify: clientIp,
+  },
+];
+
 // Joining a queue from the shop's QR code. Every join sends an email.
 export const joinRules: RateLimitRule[] = [
   // Flooding one person's inbox by joining many shops with their email.

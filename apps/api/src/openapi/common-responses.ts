@@ -11,7 +11,7 @@ function errorResponse(description: string) {
 }
 
 export const badRequest = errorResponse(
-  "Validation failed (VALIDATION_FAILED / INVALID_QUERY_PARAM / INVALID_REQUEST_PARAMS / INVALID_ID_FORMAT).",
+  "Validation failed (VALIDATION_FAILED / INVALID_QUERY_PARAM / INVALID_REQUEST_PARAMS / INVALID_ID_FORMAT), or an emailed link's token is unknown, used or expired (INVALID_TOKEN).",
 );
 export const unauthorized = errorResponse(
   "No session, or the session cookie is missing/expired (UNAUTHORIZED).",
