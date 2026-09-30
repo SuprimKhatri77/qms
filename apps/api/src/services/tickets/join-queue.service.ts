@@ -24,7 +24,7 @@ const VERIFICATION_TTL_MS = 15 * 60 * 1000;
 // against a race; the check here is just the friendly one that runs first.
 const ACTIVE_STATUSES = ["pending_verification", "waiting", "serving"] as const;
 
-// How many places one browser (its palo_device cookie) may hold in the same
+// How many places one browser (its queueup_device cookie) may hold in the same
 // queue at once. 2, not 1, so someone can also join for a companion without
 // needing a second phone. A soft limit only: clearing cookies resets it, so
 // email verification and the rate limits remain the real defenses.
@@ -33,7 +33,7 @@ const MAX_ACTIVE_TICKETS_PER_DEVICE = 2;
 export async function joinQueue(
   slug: string,
   data: JoinQueueRequest,
-  // The browser's palo_device cookie. The controller mints a fresh one for a
+  // The browser's queueup_device cookie. The controller mints a fresh one for a
   // first visit (or blocked cookies), which has no tickets yet and so is
   // never capped: that's what makes this soft. The controller always passes
   // a token; null skips the device check, which the tests use to exercise

@@ -30,12 +30,12 @@ export function AdminSidebar({ user }: { user: User }) {
           <SidebarMenuItem>
             <SidebarMenuButton
               size="lg"
-              tooltip="Palo Admin"
+              tooltip="Queueup Admin"
               render={<Link href="/admin" />}
             >
               <LogoMark className="h-6 shrink-0" />
               <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
-                <span className="truncate font-medium">Palo Admin</span>
+                <span className="truncate font-medium">Queueup Admin</span>
                 <span className="truncate text-xs text-ink-mute">
                   Platform oversight
                 </span>

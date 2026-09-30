@@ -16,7 +16,7 @@ export function buildOpenApiDocument() {
   return generator.generateDocument({
     openapi: "3.1.0",
     info: {
-      title: "Palo API",
+      title: "Queueup API",
       version: "1.0.0",
       description:
         "Queue management API: shop owners run a queue, customers join it with no account, and admins oversee the platform. Every response uses the { success, message, data } envelope on success, or { success: false, message, code, errors? } on failure — see ErrorCode in @repo/types for the full list of codes.",
