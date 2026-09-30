@@ -92,8 +92,8 @@ export function SharePage() {
       </Card>
 
       <p className="mt-4 text-center text-xs text-ink-mute">
-        The join page itself is coming in a later update — printing or sharing
-        this now is safe, it will start working once it ships.
+        This link and QR code never change, so you can print them once and keep
+        them up.
       </p>
     </div>
   );
