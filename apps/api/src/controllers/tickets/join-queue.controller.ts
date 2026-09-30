@@ -1,4 +1,4 @@
-import type { Request, Response } from "express";
+import type { Response } from "express";
 import type {
   ApiErrorResponse,
   JoinQueueRequest,
@@ -12,9 +12,10 @@ import {
   readDeviceToken,
 } from "@/lib/device-token";
 import { joinQueue } from "@/services/tickets/join-queue.service";
+import type { RequestWithBody } from "@/types";
 
 export async function joinQueueController(
-  req: Request<{ slug: string }, {}, JoinQueueRequest>,
+  req: RequestWithBody<JoinQueueRequest, { slug: string }>,
   res: Response<JoinQueueResponse | ApiErrorResponse>,
 ) {
   // A missing or malformed cookie gets a brand-new token. The service will

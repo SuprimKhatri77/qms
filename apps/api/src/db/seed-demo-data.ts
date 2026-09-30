@@ -7,7 +7,7 @@ import { auth } from "@/lib/auth";
 import { createShop } from "@/services/shops/create-shop.service";
 import { getOwnerShop } from "@/services/shops/get-owner-shop";
 import { findOrCreateTodaysQueue } from "@/services/queue/find-or-create-queue";
-import { addDays, getShopLocalDate } from "@/services/queue/local-date";
+import { addDays } from "@/services/queue/local-date";
 
 // Demo data for a fresh database, so the admin panel, /explore, analytics
 // and history all have something to show. Run through seed.ts, which checks

@@ -1,15 +1,15 @@
-import type { Request, Response } from "express";
+import type { Response } from "express";
 import type {
   ApiErrorResponse,
   UpdateShopRequest,
   UpdateShopResponse,
 } from "@repo/types";
-import { assertAuthenticated } from "@/types";
+import { assertAuthenticated, type RequestWithBody } from "@/types";
 import { statusForErrorCode } from "@/lib/http-status";
 import { updateShop } from "@/services/shops/update-shop.service";
 
 export async function updateShopController(
-  req: Request<{}, {}, UpdateShopRequest>,
+  req: RequestWithBody<UpdateShopRequest>,
   res: Response<UpdateShopResponse | ApiErrorResponse>,
 ) {
   assertAuthenticated(req);

@@ -8,6 +8,7 @@
     "build": "bun build ./src/index.ts --outdir ./dist --target bun",
     "start": "bun src/index.ts",
     "check-types": "tsc --noEmit",
+    "lint": "eslint . --max-warnings 0",
     "test": "bun test src",
     "test:integration": "bun test --preload ./tests/integration/support/capture-emails.ts tests/integration",
     "clean": "rm -rf dist *.tsbuildinfo",
@@ -19,13 +20,15 @@
     "docs:generate": "bun src/openapi/generate.ts"
   },
   "devDependencies": {
+    "@repo/eslint-config": "workspace:*",
     "@repo/types": "workspace:*",
     "@types/bun": "latest",
     "@types/cors": "^2.8.19",
     "@types/dotenv": "^8.2.3",
     "@types/express": "^5.0.6",
     "@types/nodemailer": "^8.0.1",
-    "drizzle-kit": "^0.31.10"
+    "drizzle-kit": "^0.31.10",
+    "eslint": "^9.39.1"
   },
   "peerDependencies": {
     "typescript": "^5"

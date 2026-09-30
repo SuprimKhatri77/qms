@@ -1,4 +1,4 @@
-import type { Request, Response } from "express";
+import type { Response } from "express";
 import type {
   ApiErrorResponse,
   VerifyTicketRequest,
@@ -6,9 +6,10 @@ import type {
 } from "@repo/types";
 import { statusForErrorCode } from "@/lib/http-status";
 import { verifyTicket } from "@/services/tickets/verify-ticket.service";
+import type { RequestWithBody } from "@/types";
 
 export async function verifyTicketController(
-  req: Request<{}, {}, VerifyTicketRequest>,
+  req: RequestWithBody<VerifyTicketRequest>,
   res: Response<VerifyTicketResponse | ApiErrorResponse>,
 ) {
   const result = await verifyTicket(req.body.token);

@@ -1,4 +1,4 @@
-import type { Request, Response } from "express";
+import type { Response } from "express";
 import type {
   ApiErrorResponse,
   ForgotPasswordRequest,
@@ -6,9 +6,10 @@ import type {
 } from "@repo/types";
 import { statusForErrorCode } from "@/lib/http-status";
 import { forgotPassword } from "@/services/auth/forgot-password.service";
+import type { RequestWithBody } from "@/types";
 
 export async function forgotPasswordController(
-  req: Request<{}, {}, ForgotPasswordRequest>,
+  req: RequestWithBody<ForgotPasswordRequest>,
   res: Response<ForgotPasswordResponse | ApiErrorResponse>,
 ) {
   const result = await forgotPassword(req.body);
