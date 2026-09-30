@@ -1,5 +1,6 @@
 import { Router } from "express";
 import {
+  changePasswordSchema,
   forgotPasswordSchema,
   loginSchema,
   resetPasswordSchema,
@@ -7,8 +8,10 @@ import {
 } from "@repo/types";
 import { validate } from "@/middlewares/validate";
 import { rateLimit } from "@/middlewares/rate-limit";
+import { requireAuth } from "@/middlewares/require-auth";
 import {
   authEmailRules,
+  changePasswordRules,
   loginRules,
   resetPasswordRules,
   signupRules,
@@ -18,6 +21,7 @@ import { signupController } from "@/controllers/auth/signup.controller";
 import { logoutController } from "@/controllers/auth/logout.controller";
 import { forgotPasswordController } from "@/controllers/auth/forgot-password.controller";
 import { resetPasswordController } from "@/controllers/auth/reset-password.controller";
+import { changePasswordController } from "@/controllers/auth/change-password.controller";
 
 const authRoutes = Router();
 
@@ -50,6 +54,16 @@ authRoutes.post(
   validate(resetPasswordSchema),
   rateLimit(resetPasswordRules),
   resetPasswordController,
+);
+// requireAuth comes first here: the limit is counted per signed-in account
+// (see changePasswordRules), and a request with no session is turned away
+// before it's counted at all.
+authRoutes.post(
+  "/change-password",
+  requireAuth,
+  validate(changePasswordSchema),
+  rateLimit(changePasswordRules),
+  changePasswordController,
 );
 
 export { authRoutes };

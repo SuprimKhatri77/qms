@@ -11,8 +11,9 @@ extendZodWithOpenApi(z);
 
 export const registry = new OpenAPIRegistry();
 
-// Better Auth issues a session cookie on login/signup; every owner/admin
-// route past that point relies on it being sent back, not a bearer header.
+// Better Auth issues a session cookie on login/signup (and a replacement one
+// on a password change); every owner/admin route past that point relies on
+// it being sent back, not a bearer header.
 export const SESSION_COOKIE_AUTH = "sessionCookie";
 
 registry.registerComponent("securitySchemes", SESSION_COOKIE_AUTH, {
@@ -20,5 +21,5 @@ registry.registerComponent("securitySchemes", SESSION_COOKIE_AUTH, {
   in: "cookie",
   name: "better-auth.session_token",
   description:
-    "Session cookie set by Better Auth after a successful POST /api/v1/auth/login or /api/v1/auth/signup.",
+    "Session cookie set by Better Auth after a successful POST /api/v1/auth/login or /api/v1/auth/signup, and replaced after POST /api/v1/auth/change-password.",
 });

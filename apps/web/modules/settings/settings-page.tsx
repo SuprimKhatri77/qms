@@ -1,6 +1,6 @@
 "use client";
 
-import type { CreateShopFormValues } from "@repo/types";
+import type { CreateShopFormValues, User } from "@repo/types";
 import {
   Card,
   CardContent,
@@ -8,11 +8,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { ChangePasswordForm } from "@/modules/auth/change-password-form";
 import { PageHeader } from "@/modules/dashboard/page-header";
 import { ShopForm, useUpdateShop } from "@/modules/shop";
 import { useShop } from "@/modules/shop/shop-provider";
 
-export function SettingsPage() {
+export function SettingsPage({ user }: { user: User }) {
   const shop = useShop();
   const updateShop = useUpdateShop();
 
@@ -58,6 +59,18 @@ export function SettingsPage() {
               updateShop.mutateAsync(values).catch(() => undefined)
             }
           />
+        </CardContent>
+      </Card>
+
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle>Account</CardTitle>
+          <CardDescription>
+            Signed in as {user.email}. Change the password you log in with.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ChangePasswordForm user={user} />
         </CardContent>
       </Card>
     </div>

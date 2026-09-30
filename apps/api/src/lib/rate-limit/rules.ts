@@ -115,6 +115,30 @@ export const resetPasswordRules: RateLimitRule[] = [
   },
 ];
 
+// Changing the password from the account page. The route runs after
+// requireAuth, so the signed-in user is known. Someone who got hold of a
+// session but not the password could use this to guess the current
+// password, so that guessing is limited per account.
+function signedInUserId(req: Request): string | null {
+  return req.user?.id ?? null;
+}
+
+export const changePasswordRules: RateLimitRule[] = [
+  {
+    name: "change-password-user",
+    limit: 5,
+    windowSeconds: 15 * MINUTE,
+    identify: signedInUserId,
+  },
+  // The same guessing from one place across many stolen sessions.
+  {
+    name: "change-password-ip",
+    limit: 20,
+    windowSeconds: 15 * MINUTE,
+    identify: clientIp,
+  },
+];
+
 // Joining a queue from the shop's QR code. Every join sends an email.
 export const joinRules: RateLimitRule[] = [
   // Flooding one person's inbox by joining many shops with their email.

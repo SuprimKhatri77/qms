@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
-import { SettingsPage } from "@/modules/settings/settings-page";
+import { AccountPage } from "@/modules/admin";
 import { getCurrentUserFromApi } from "@/modules/dashboard/api/get-current-user.server";
 
 export const metadata: Metadata = {
-  title: "Settings",
+  title: "Account",
 };
 
 export default async function Page() {
   const user = await getCurrentUserFromApi();
 
-  return <SettingsPage user={user} />;
+  return <AccountPage user={user} />;
 }

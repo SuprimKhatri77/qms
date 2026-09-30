@@ -1,6 +1,7 @@
 "use client";
 
-import { ChevronsUpDown, LogOut } from "lucide-react";
+import Link from "next/link";
+import { ChevronsUpDown, LogOut, UserRound } from "lucide-react";
 import type { User } from "@repo/types";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -21,8 +22,8 @@ import {
 import { getInitials } from "@/lib/utils";
 import { useLogout } from "@/modules/auth/hooks/mutations/useLogout";
 
-// Same shape as modules/dashboard/nav-user.tsx, minus the "Settings" link:
-// there's no admin settings page (yet).
+// Same shape as modules/dashboard/nav-user.tsx. Admins have no shop
+// settings, so the link goes to their Account page instead.
 export function AdminNavUser({ user }: { user: User }) {
   const { isMobile } = useSidebar();
   const logout = useLogout();
@@ -62,6 +63,10 @@ export function AdminNavUser({ user }: { user: User }) {
               </DropdownMenuLabel>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
+            <DropdownMenuItem render={<Link href="/admin/account" />}>
+              <UserRound />
+              Account
+            </DropdownMenuItem>
             <DropdownMenuItem
               disabled={logout.isPending}
               onClick={() => logout.mutate()}

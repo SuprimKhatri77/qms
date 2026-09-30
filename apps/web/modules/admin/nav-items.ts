@@ -1,4 +1,10 @@
-import { ChartColumn, ScrollText, Store, type LucideIcon } from "lucide-react";
+import {
+  ChartColumn,
+  ScrollText,
+  Store,
+  UserRound,
+  type LucideIcon,
+} from "lucide-react";
 
 export type NavItem = {
   title: string;
@@ -14,6 +20,7 @@ export const NAV_ITEMS: NavItem[] = [
   { title: "Shops", href: "/admin", icon: Store, exact: true },
   { title: "Analytics", href: "/admin/analytics", icon: ChartColumn },
   { title: "Logs", href: "/admin/logs", icon: ScrollText },
+  { title: "Account", href: "/admin/account", icon: UserRound },
 ];
 
 export function isNavItemActive(item: NavItem, pathname: string): boolean {

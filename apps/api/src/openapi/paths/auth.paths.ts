@@ -1,5 +1,6 @@
 import { z } from "zod";
 import {
+  changePasswordSchema,
   forgotPasswordSchema,
   loginSchema,
   resetPasswordSchema,
@@ -10,6 +11,7 @@ import { registry, SESSION_COOKIE_AUTH } from "../registry";
 import { apiSuccessSchema } from "../schemas";
 import {
   badRequest,
+  conflict,
   errorResponse,
   duplicateEntry,
   serverError,
@@ -19,7 +21,8 @@ import {
 
 const userEnvelope = apiSuccessSchema(z.object({ user: userSchema }));
 
-// Logout, forgot-password and reset-password answer with just a message.
+// Logout, forgot-password, reset-password and change-password answer with
+// just a message.
 const messageResponseSchema = z.object({
   success: z.literal(true),
   message: z.string(),
@@ -125,7 +128,7 @@ registry.registerPath({
   tags: ["Auth"],
   summary: "Set a new password from a reset link",
   description:
-    "The token from the emailed link works once. An unknown, used or expired token fails with 400 INVALID_TOKEN. On success the account's other outstanding reset links stop working, every existing session is signed out, and no new one is started: the owner logs in with the new password.",
+    "The token from the emailed link works once. An unknown, used or expired token fails with 400 INVALID_TOKEN. On success the account's other outstanding reset links stop working, every existing session is signed out, no new one is started (the owner logs in with the new password), and a 'password changed' email is sent. Tokens are stored only as a SHA-256 hash.",
   request: {
     body: {
       content: { "application/json": { schema: resetPasswordSchema } },
@@ -139,6 +142,33 @@ registry.registerPath({
     400: errorResponse(
       "Validation failed (VALIDATION_FAILED), or the link's token is unknown, used or expired (INVALID_TOKEN).",
     ),
+    429: tooManyRequests,
+    500: serverError,
+  },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/api/v1/auth/change-password",
+  tags: ["Auth"],
+  summary: "Change the signed-in user's password",
+  description:
+    "Needs the current password. On success every session on the account is signed out, this one included, and this browser is given a new session cookie, so it stays signed in while every other device is signed out. The account's outstanding reset links stop working, and a 'password changed' email is sent. A wrong current password fails with 400 VALIDATION_FAILED on the currentPassword field (not 401, which means the session is gone). An account with no password yet gets 409 CONFLICT. Changes to one account run one at a time. Limited to 5 attempts per account and 20 per IP every 15 minutes. Better Auth's own /api/auth/change-password is switched off, so this is the only way for a signed-in user to change their own password (a reset link is the other way in).",
+  security: [{ [SESSION_COOKIE_AUTH]: [] }],
+  request: {
+    body: {
+      content: { "application/json": { schema: changePasswordSchema } },
+    },
+  },
+  responses: {
+    200: {
+      description:
+        "Password changed. Sets a new session cookie; every other session is signed out.",
+      content: { "application/json": { schema: messageResponseSchema } },
+    },
+    400: badRequest,
+    401: unauthorized,
+    409: conflict,
     429: tooManyRequests,
     500: serverError,
   },

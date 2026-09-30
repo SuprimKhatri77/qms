@@ -117,3 +117,53 @@ export type ResetPasswordResponse = {
   success: true;
   message: string;
 };
+
+// Body of POST /auth/change-password, for an owner or admin who is signed in
+// and knows their current password. The current password only has to be
+// non-empty here: whether it's right is Better Auth's check, and a rule like
+// "at least 8 characters" would only give a confusing message for a typo.
+const changePasswordFields = z.object({
+  currentPassword: z
+    .string({ error: "Enter your current password" })
+    .min(1, { error: "Enter your current password" })
+    .max(PASSWORD_MAX_LENGTH, {
+      error: `Password must be at most ${PASSWORD_MAX_LENGTH} characters`,
+    }),
+  newPassword: passwordSchema,
+});
+
+// "Changing" to the same password would still sign every other device out
+// and send a "your password was changed" email, for no reason.
+function isDifferentFromCurrent(data: {
+  currentPassword: string;
+  newPassword: string;
+}) {
+  return data.newPassword !== data.currentPassword;
+}
+
+const differentFromCurrentMessage = {
+  error: "Choose a password different from your current one",
+  path: ["newPassword"],
+};
+
+export const changePasswordSchema = changePasswordFields.refine(
+  isDifferentFromCurrent,
+  differentFromCurrentMessage,
+);
+
+export type ChangePasswordRequest = z.infer<typeof changePasswordSchema>;
+
+export const changePasswordFormSchema = changePasswordFields
+  .extend({ confirmNewPassword: confirmPasswordSchema })
+  .refine(isDifferentFromCurrent, differentFromCurrentMessage)
+  .refine((data) => data.newPassword === data.confirmNewPassword, {
+    error: "Passwords do not match",
+    path: ["confirmNewPassword"],
+  });
+
+export type ChangePasswordFormValues = z.infer<typeof changePasswordFormSchema>;
+
+export type ChangePasswordResponse = {
+  success: true;
+  message: string;
+};
