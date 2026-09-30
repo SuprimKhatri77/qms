@@ -1,6 +1,9 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+// First, so the mailer is swapped out before anything that sends email loads
+// (also preloaded by `bun run test:integration`).
+import { emailsTo, latestResetToken } from "./support/capture-emails";
 import { randomUUID } from "node:crypto";
-import { and, eq, like, ne } from "drizzle-orm";
+import { and, eq, like } from "drizzle-orm";
 import { db } from "@/db";
 import { session, users, verification } from "@/db/schema";
 import { auth } from "@/lib/auth";
@@ -12,25 +15,19 @@ import { ErrorCode } from "@repo/types";
 const OLD_PASSWORD = "old-password-1";
 const NEW_PASSWORD = "new-password-2";
 
-// Better Auth keeps a reset token as a verification row whose identifier is
-// "reset-password:<token>" and whose value is the user's id. The test reads
-// it straight from the database, where the email would normally carry it.
-async function getResetToken(userId: string): Promise<string> {
-  const [row] = await db
+// The reset rows this account has in the database right now, hashed
+// ("reset-password-hash:…") or plain ("reset-password:…").
+async function storedResetIdentifiers(userId: string): Promise<string[]> {
+  const rows = await db
     .select({ identifier: verification.identifier })
     .from(verification)
     .where(
       and(
         eq(verification.value, userId),
-        like(verification.identifier, "reset-password:%"),
+        like(verification.identifier, "reset-password%"),
       ),
-    )
-    .limit(1);
-
-  if (!row) {
-    throw new Error("No reset token was stored for this user");
-  }
-  return row.identifier.slice("reset-password:".length);
+    );
+  return rows.map((row) => row.identifier);
 }
 
 // Unlike the queue fixtures, this goes through Better Auth, because the
@@ -57,7 +54,7 @@ describe("forgot password -> reset password", () => {
     const requested = await forgotPassword({ email });
     expect(requested.success).toBe(true);
 
-    const token = await getResetToken(userId);
+    const token = latestResetToken(email);
     const reset = await resetPassword({ token, password: NEW_PASSWORD });
     expect(reset.success).toBe(true);
 
@@ -84,7 +81,7 @@ describe("forgot password -> reset password", () => {
 
   test("a link only works once", async () => {
     await forgotPassword({ email });
-    const token = await getResetToken(userId);
+    const token = latestResetToken(email);
 
     await resetPassword({ token, password: NEW_PASSWORD });
     const second = await resetPassword({ token, password: "third-password" });
@@ -97,22 +94,10 @@ describe("forgot password -> reset password", () => {
 
   test("resetting with one link kills the account's other reset links", async () => {
     await forgotPassword({ email });
-    const firstToken = await getResetToken(userId);
+    const firstToken = latestResetToken(email);
     await forgotPassword({ email });
-    const [secondRow] = await db
-      .select({ identifier: verification.identifier })
-      .from(verification)
-      .where(
-        and(
-          eq(verification.value, userId),
-          like(verification.identifier, "reset-password:%"),
-          ne(verification.identifier, `reset-password:${firstToken}`),
-        ),
-      );
-    if (!secondRow) {
-      throw new Error("The second request stored no token");
-    }
-    const secondToken = secondRow.identifier.slice("reset-password:".length);
+    const secondToken = latestResetToken(email);
+    expect(secondToken).not.toBe(firstToken);
 
     const used = await resetPassword({
       token: secondToken,
@@ -152,7 +137,7 @@ describe("forgot password -> reset password", () => {
 
     await forgotPassword({ email });
     await resetPassword({
-      token: await getResetToken(userId),
+      token: latestResetToken(email),
       password: NEW_PASSWORD,
     });
 
@@ -161,5 +146,63 @@ describe("forgot password -> reset password", () => {
       .from(session)
       .where(eq(session.userId, userId));
     expect(after.length).toBe(0);
+  });
+
+  test("the database only holds a hash of the reset token", async () => {
+    await forgotPassword({ email });
+    const token = latestResetToken(email);
+
+    const identifiers = await storedResetIdentifiers(userId);
+    expect(identifiers.length).toBe(1);
+    expect(identifiers[0]).toMatch(/^reset-password-hash:[0-9a-f]{64}$/);
+    expect(identifiers[0]).not.toContain(token);
+  });
+
+  test("a reset emails the owner that their password changed", async () => {
+    await forgotPassword({ email });
+    await resetPassword({
+      token: latestResetToken(email),
+      password: NEW_PASSWORD,
+    });
+
+    const subjects = emailsTo(email).map((sent) => sent.subject);
+    expect(subjects).toContain("Your Queueup password was changed");
+  });
+
+  test("the stored hash can't be used as a reset token", async () => {
+    await forgotPassword({ email });
+    const [stored] = await storedResetIdentifiers(userId);
+    if (!stored) {
+      throw new Error("No reset row was stored");
+    }
+
+    // Someone who can read the database tries the row itself as a token.
+    const hashPart = stored.slice(stored.indexOf(":") + 1);
+    const result = await resetPassword({
+      token: hashPart,
+      password: "attacker-password",
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.code).toBe(ErrorCode.INVALID_TOKEN);
+    }
+  });
+
+  test("a plain link stored before hashing was switched on still works", async () => {
+    // What Better Auth stored for a link emailed before this deploy.
+    const legacyToken = "legacyPlainToken12345678";
+    await db.insert(verification).values({
+      id: randomUUID(),
+      identifier: `reset-password:${legacyToken}`,
+      value: userId,
+      expiresAt: new Date(Date.now() + 15 * 60 * 1000),
+    });
+
+    const result = await resetPassword({
+      token: legacyToken,
+      password: NEW_PASSWORD,
+    });
+    expect(result.success).toBe(true);
   });
 });
