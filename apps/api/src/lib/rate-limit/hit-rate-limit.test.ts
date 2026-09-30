@@ -4,19 +4,38 @@ import { randomUUID } from "node:crypto";
 import { withTimeout } from "@/lib/with-timeout";
 import { hitRateLimit } from "./hit-rate-limit";
 
-// Runs against a real Redis (REDIS_URL, or localhost:6379), because what's
-// being tested is exactly how the Redis commands behave together: expiry,
-// NX, and TTL. Skipped, not failed, when there's no Redis to talk to.
-const redis = new RedisClient(
-  process.env.REDIS_URL || "redis://localhost:6379",
-  { autoReconnect: false, enableOfflineQueue: false },
-);
-const redisAvailable = await withTimeout(redis.connect(), 1000, "connect")
-  .then(() => true)
-  .catch(() => false);
+// Runs against a real Redis, because what's being tested is exactly how the
+// Redis commands behave together: expiry, NX, and TTL.
+//
+// Only the Redis named by REDIS_URL is used, never a guessed default. A
+// fallback to localhost:6379 would quietly run these tests against whatever
+// else is listening there on a developer's machine (another project's
+// Redis, say).
+//
+// - REDIS_URL not set: the tests are skipped (shown as skipped in the
+//   summary), so the rest of the unit tests still run without Redis.
+// - REDIS_URL set: setting it means "run these", so a Redis that can't be
+//   reached fails the run instead of skipping. CI sets it, so a broken CI
+//   Redis can't turn into a green run that tested nothing.
+async function connectToTestRedis(): Promise<RedisClient | null> {
+  const redisUrl = process.env.REDIS_URL;
+  if (!redisUrl) {
+    return null;
+  }
 
-if (!redisAvailable) {
-  console.warn("Skipping hitRateLimit tests: no Redis reachable at REDIS_URL");
+  const client = new RedisClient(redisUrl, {
+    autoReconnect: false,
+    enableOfflineQueue: false,
+  });
+  try {
+    await withTimeout(client.connect(), 1000, "connect");
+  } catch (error) {
+    client.close();
+    throw new Error(
+      `REDIS_URL is set but its Redis can't be reached: ${error}`,
+    );
+  }
+  return client;
 }
 
 // Unique per test run, so these never touch real rate-limit keys (or
@@ -28,7 +47,15 @@ function freshKey() {
   return `${prefix}:${keyCount}`;
 }
 
-describe.skipIf(!redisAvailable)("hitRateLimit", () => {
+const testRedis = await connectToTestRedis();
+
+if (testRedis) {
+  describe("hitRateLimit", () => hitRateLimitTests(testRedis));
+} else {
+  test.skip("hitRateLimit (needs REDIS_URL)", () => {});
+}
+
+function hitRateLimitTests(redis: RedisClient) {
   afterEach(async () => {
     for (let i = 1; i <= keyCount; i++) {
       await redis.del(`${prefix}:${i}`);
@@ -94,4 +121,4 @@ describe.skipIf(!redisAvailable)("hitRateLimit", () => {
 
     expect(await redis.ttl(key)).toBeGreaterThan(0);
   });
-});
+}
