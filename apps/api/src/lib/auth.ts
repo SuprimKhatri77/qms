@@ -10,9 +10,9 @@ import {
 } from "@/lib/emails/password-emails";
 import {
   RESET_IDENTIFIER_PREFIX,
-  deleteResetLinks,
   hashResetIdentifier,
-} from "@/lib/reset-links";
+} from "@/lib/reset-link-identifier";
+import { deleteResetLinks } from "@/lib/reset-links";
 import { logEvent } from "@/lib/system-logs/log-event";
 import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "@repo/types";
 

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { hashResetIdentifier } from "./reset-links";
+import { hashResetIdentifier } from "./reset-link-identifier";
 
 describe("hashResetIdentifier", () => {
   test("replaces the token with its SHA-256 under its own prefix", async () => {
