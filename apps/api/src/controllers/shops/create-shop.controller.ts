@@ -1,15 +1,15 @@
-import type { Request, Response } from "express";
+import type { Response } from "express";
 import type {
   ApiErrorResponse,
   CreateShopRequest,
   CreateShopResponse,
 } from "@repo/types";
 import { ErrorCode } from "@repo/types";
-import { assertAuthenticated } from "@/types";
+import { assertAuthenticated, type RequestWithBody } from "@/types";
 import { createShop } from "@/services/shops/create-shop.service";
 
 export async function createShopController(
-  req: Request<{}, {}, CreateShopRequest>,
+  req: RequestWithBody<CreateShopRequest>,
   res: Response<CreateShopResponse | ApiErrorResponse>,
 ) {
   assertAuthenticated(req);

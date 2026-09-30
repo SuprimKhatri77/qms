@@ -1,12 +1,13 @@
-import type { NextFunction, Request, Response } from "express";
+import type { NextFunction, Response } from "express";
 import { ErrorCode, type ApiErrorResponse } from "@repo/types";
 import { z } from "zod";
 import { toValidationErrors } from "@/lib/validation";
+import type { RequestWithBody } from "@/types";
 
 export const validate =
   <Schema extends z.ZodTypeAny>(schema: Schema) =>
   (
-    req: Request<{}, {}, z.infer<Schema>>,
+    req: RequestWithBody<z.infer<Schema>>,
     res: Response<ApiErrorResponse>,
     next: NextFunction,
   ) => {

@@ -1,4 +1,4 @@
-import type { Request, Response } from "express";
+import type { Response } from "express";
 import { fromNodeHeaders } from "better-auth/node";
 import type {
   ApiErrorResponse,
@@ -7,9 +7,10 @@ import type {
 } from "@repo/types";
 import { ErrorCode } from "@repo/types";
 import { login } from "@/services/auth/login.service";
+import type { RequestWithBody } from "@/types";
 
 export async function loginController(
-  req: Request<{}, {}, LoginRequest>,
+  req: RequestWithBody<LoginRequest>,
   res: Response<LoginResponse | ApiErrorResponse>,
 ) {
   const result = await login(req.body, fromNodeHeaders(req.headers));

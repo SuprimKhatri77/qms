@@ -1,4 +1,4 @@
-import type { Request, Response } from "express";
+import type { Response } from "express";
 import { fromNodeHeaders } from "better-auth/node";
 import type {
   ApiErrorResponse,
@@ -7,9 +7,10 @@ import type {
 } from "@repo/types";
 import { ErrorCode } from "@repo/types";
 import { signup } from "@/services/auth/signup.service";
+import type { RequestWithBody } from "@/types";
 
 export async function signupController(
-  req: Request<{}, {}, SignupRequest>,
+  req: RequestWithBody<SignupRequest>,
   res: Response<SignupResponse | ApiErrorResponse>,
 ) {
   const result = await signup(req.body, fromNodeHeaders(req.headers));

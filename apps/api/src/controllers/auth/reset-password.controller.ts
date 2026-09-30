@@ -1,4 +1,4 @@
-import type { Request, Response } from "express";
+import type { Response } from "express";
 import type {
   ApiErrorResponse,
   ResetPasswordRequest,
@@ -6,9 +6,10 @@ import type {
 } from "@repo/types";
 import { statusForErrorCode } from "@/lib/http-status";
 import { resetPassword } from "@/services/auth/reset-password.service";
+import type { RequestWithBody } from "@/types";
 
 export async function resetPasswordController(
-  req: Request<{}, {}, ResetPasswordRequest>,
+  req: RequestWithBody<ResetPasswordRequest>,
   res: Response<ResetPasswordResponse | ApiErrorResponse>,
 ) {
   const result = await resetPassword(req.body);

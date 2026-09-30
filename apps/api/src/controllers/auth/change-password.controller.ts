@@ -1,4 +1,4 @@
-import type { Request, Response } from "express";
+import type { Response } from "express";
 import { fromNodeHeaders } from "better-auth/node";
 import type {
   ApiErrorResponse,
@@ -6,11 +6,11 @@ import type {
   ChangePasswordResponse,
 } from "@repo/types";
 import { statusForErrorCode } from "@/lib/http-status";
-import { assertAuthenticated } from "@/types";
+import { assertAuthenticated, type RequestWithBody } from "@/types";
 import { changePassword } from "@/services/auth/change-password.service";
 
 export async function changePasswordController(
-  req: Request<{}, {}, ChangePasswordRequest>,
+  req: RequestWithBody<ChangePasswordRequest>,
   res: Response<ChangePasswordResponse | ApiErrorResponse>,
 ) {
   assertAuthenticated(req);
