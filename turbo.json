@@ -8,21 +8,45 @@
       "outputs": [".next/**", "!.next/cache/**", "!.next/dev/**"]
     },
     "lint": {
-      "dependsOn": ["^lint"]
+      "dependsOn": ["^lint"],
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/turbo.json"]
     },
     "check-types": {
       "dependsOn": ["^check-types"]
     },
-    "test": {
-      "passThroughEnv": ["REDIS_URL"]
+    "test": {},
+    "api#test": {
+      "env": ["REDIS_URL"]
     },
     "test:integration": {
       "cache": false,
-      "passThroughEnv": ["DATABASE_URL", "FRONTEND_URL"]
+      "passThroughEnv": [
+        "BETTER_AUTH_SECRET",
+        "BETTER_AUTH_URL",
+        "DATABASE_URL",
+        "FRONTEND_URL"
+      ]
     },
     "dev": {
       "cache": false,
       "persistent": true
+    },
+    "api#dev": {
+      "cache": false,
+      "persistent": true,
+      "passThroughEnv": [
+        "BETTER_AUTH_SECRET",
+        "BETTER_AUTH_URL",
+        "COOKIE_DOMAIN",
+        "DATABASE_URL",
+        "EMAIL_FROM",
+        "EMAIL_PASS",
+        "EMAIL_USER",
+        "FRONTEND_URL",
+        "PORT",
+        "REDIS_URL",
+        "TRUST_PROXY_HOPS"
+      ]
     },
     "docs:generate": {
       "cache": false
