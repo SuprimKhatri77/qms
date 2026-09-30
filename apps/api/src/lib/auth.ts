@@ -105,6 +105,16 @@ export const auth = betterAuth({
       },
     },
   },
+  // Raw Better Auth routes that are switched off. This only closes the HTTP
+  // routes; auth.api.* calls from our own services still work.
+  // - /change-password: changing a password goes through
+  //   /api/v1/auth/change-password only, which adds the rate limit, the
+  //   "password changed" email and the reset-link cleanup this would skip.
+  // - /verify-password: answers "is this the account's password?" for
+  //   anyone holding a session, with no limit of its own. Someone who stole
+  //   a session could guess the password here freely, then change it once
+  //   with the answer. Nothing in the app uses it.
+  disabledPaths: ["/change-password", "/verify-password"],
   // Owners aren't asked to verify their email: nothing in the app reads
   // emailVerified, and the password-reset email is what proves an owner
   // controls the address when it actually matters. So no email is sent on

@@ -1,5 +1,7 @@
 import api from "@/lib/axios";
 import {
+  ChangePasswordRequest,
+  ChangePasswordResponse,
   ForgotPasswordRequest,
   ForgotPasswordResponse,
   LoginRequest,
@@ -41,6 +43,16 @@ export const resetPassword = async (
 ): Promise<ResetPasswordResponse> => {
   const res = await api.post<ResetPasswordResponse>(
     "/auth/reset-password",
+    data,
+  );
+  return res.data;
+};
+
+export const changePassword = async (
+  data: ChangePasswordRequest,
+): Promise<ChangePasswordResponse> => {
+  const res = await api.post<ChangePasswordResponse>(
+    "/auth/change-password",
     data,
   );
   return res.data;

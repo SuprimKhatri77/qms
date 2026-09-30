@@ -1,5 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
+  changePasswordFormSchema,
+  changePasswordSchema,
   forgotPasswordSchema,
   loginSchema,
   resetPasswordFormSchema,
@@ -149,5 +151,69 @@ describe("resetPasswordFormSchema", () => {
     });
     expect(result.success).toBe(false);
     expect(result.error?.issues[0]?.path).toEqual(["confirmPassword"]);
+  });
+});
+
+describe("changePasswordSchema", () => {
+  test("accepts a current password and a valid new one", () => {
+    const result = changePasswordSchema.safeParse({
+      currentPassword: "oldpassword1",
+      newPassword: "newpassword1",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  test("rejects an empty current password", () => {
+    const result = changePasswordSchema.safeParse({
+      currentPassword: "",
+      newPassword: "newpassword1",
+    });
+    expect(result.success).toBe(false);
+    expect(result.error?.issues[0]?.path).toEqual(["currentPassword"]);
+  });
+
+  test("uses the same bounds as signup for the new password", () => {
+    const tooShort = changePasswordSchema.safeParse({
+      currentPassword: "oldpassword1",
+      newPassword: "short",
+    });
+    const tooLong = changePasswordSchema.safeParse({
+      currentPassword: "oldpassword1",
+      newPassword: "a".repeat(51),
+    });
+    expect(tooShort.success).toBe(false);
+    expect(tooLong.success).toBe(false);
+  });
+
+  test("rejects a new password equal to the current one, on newPassword", () => {
+    const result = changePasswordSchema.safeParse({
+      currentPassword: "samepassword1",
+      newPassword: "samepassword1",
+    });
+    expect(result.success).toBe(false);
+    expect(result.error?.issues[0]?.path).toEqual(["newPassword"]);
+  });
+});
+
+describe("changePasswordFormSchema", () => {
+  test("rejects a confirmation that doesn't match, on confirmNewPassword", () => {
+    const result = changePasswordFormSchema.safeParse({
+      currentPassword: "oldpassword1",
+      newPassword: "newpassword1",
+      confirmNewPassword: "different12",
+    });
+    expect(result.success).toBe(false);
+    expect(result.error?.issues.map((issue) => issue.path)).toEqual([
+      ["confirmNewPassword"],
+    ]);
+  });
+
+  test("accepts matching, different passwords", () => {
+    const result = changePasswordFormSchema.safeParse({
+      currentPassword: "oldpassword1",
+      newPassword: "newpassword1",
+      confirmNewPassword: "newpassword1",
+    });
+    expect(result.success).toBe(true);
   });
 });
