@@ -18,7 +18,8 @@ const HOUR = 60 * MINUTE;
 const MAX_EMAIL_LENGTH = 254;
 
 // req.ip honours X-Forwarded-For only as far as `trust proxy` allows (see
-// index.ts), so a client can't dodge IP limits by sending a fake header.
+// AppOptions in app.ts), so a client can't dodge IP limits by sending a
+// fake header.
 function clientIp(req: Request): string | null {
   return req.ip ?? null;
 }
@@ -103,7 +104,7 @@ export const authEmailRules: RateLimitRule[] = [
 ];
 
 // Setting a new password from a reset link, on our route and Better Auth's
-// own ones (see index.ts). The token is 24 random characters and dies after
+// own ones (see app.ts). The token is 24 random characters and dies after
 // one use or 15 minutes, so guessing one is already infeasible. Like
 // verifyRules, this only stops anyone hammering them.
 export const resetPasswordRules: RateLimitRule[] = [

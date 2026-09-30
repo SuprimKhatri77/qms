@@ -41,7 +41,7 @@ authRoutes.post(
 );
 authRoutes.post("/logout", logoutController);
 // Shares its counters with Better Auth's own /api/auth/request-password-reset
-// (same rule names, see index.ts), so switching between the two doesn't get
+// (same rule names, see app.ts), so switching between the two doesn't get
 // anyone a fresh allowance of reset emails.
 authRoutes.post(
   "/forgot-password",
