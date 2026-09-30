@@ -242,6 +242,7 @@ Copy [`.env.example`](.env.example) → `.env.local` at the repo root (used by C
 - **Husky** — pre-commit runs lint-staged (Prettier); pre-push runs typecheck + build
 - **Turbo** — task orchestration and caching
 - **GitHub Actions** — on every PR and push to `main`, [CI](.github/workflows/ci.yml) runs typecheck, lint, unit tests, migrations + integration tests against a fresh Postgres and Redis, and a full build
+- **Running the tests locally** — `bun run test` needs nothing (the Redis unit test is skipped without `REDIS_URL`). `bun run test:integration` needs `DATABASE_URL` pointing at a migrated test database and `REDIS_URL` pointing at a Redis the tests may write `rl:*` keys to: the HTTP tests go through the real rate limits. Neither is ever guessed.
 - **TypeScript** everywhere
 
 ## License
