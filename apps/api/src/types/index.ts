@@ -21,8 +21,6 @@ type SignedIn = {
   user: User;
 };
 
-export type AuthenticatedRequest = Request & SignedIn;
-
 // Generic over the request's own type, so a RequestWithBody<…> keeps its
 // typed body after this check. Asserting a plain Request instead would merge
 // in Express's default body type (any) and quietly untype req.body.

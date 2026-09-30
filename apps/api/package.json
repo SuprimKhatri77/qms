@@ -24,7 +24,6 @@
     "@repo/types": "workspace:*",
     "@types/bun": "latest",
     "@types/cors": "^2.8.19",
-    "@types/dotenv": "^8.2.3",
     "@types/express": "^5.0.6",
     "@types/nodemailer": "^8.0.1",
     "drizzle-kit": "^0.31.10",

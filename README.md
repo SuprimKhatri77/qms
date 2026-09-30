@@ -43,7 +43,6 @@ Turborepo monorepo with Bun: Next.js frontend and Express API backed by PostgreS
 | `apps/web`                   | Next.js UI (React Query, Tailwind, shadcn) |
 | `apps/api`                   | Express API, Better Auth, Drizzle ORM      |
 | `packages/types`             | Shared Zod / TypeScript types              |
-| `packages/ui`                | Shared UI components                       |
 | `packages/eslint-config`     | Shared ESLint config                       |
 | `packages/typescript-config` | Shared TSConfig                            |
 
