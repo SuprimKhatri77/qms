@@ -10,7 +10,7 @@ import type { CookieOptions } from "express";
 // capped. Email verification, one active ticket per email and the Redis rate
 // limits are the real defenses; this just stops one browser from casually
 // filling a queue with made-up emails.
-export const DEVICE_COOKIE_NAME = "palo_device";
+export const DEVICE_COOKIE_NAME = "queueup_device";
 
 // The exact shape newDeviceToken() mints: 16 random bytes as hex.
 const DEVICE_TOKEN_FORMAT = /^[0-9a-f]{32}$/;
@@ -40,7 +40,7 @@ export function newDeviceToken(): string {
   return randomBytes(16).toString("hex");
 }
 
-// Reads our cookie out of the raw Cookie header ("a=1; palo_device=abc").
+// Reads our cookie out of the raw Cookie header ("a=1; queueup_device=abc").
 // Anything that isn't a token we could have minted is skipped, so a client
 // can't get a huge or junk value stored on its ticket. A browser can send
 // two cookies with our name (e.g. an old copy set with another Path), so

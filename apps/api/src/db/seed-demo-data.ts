@@ -26,8 +26,8 @@ type DemoOwner = {
 };
 
 const SUPERADMIN = {
-  email: "superadmin@palo.test",
-  name: "Palo Superadmin",
+  email: "superadmin@queueup.test",
+  name: "Queueup Superadmin",
 };
 
 // Four shops across Kathmandu and Pokhara in different categories, so the
@@ -35,7 +35,7 @@ const SUPERADMIN = {
 // The first owner's shop also gets the queue history below.
 const DEMO_OWNERS: DemoOwner[] = [
   {
-    email: "owner@palo.test",
+    email: "owner@queueup.test",
     name: "Hari Shrestha",
     shop: {
       name: "Hari's Barber Studio",
@@ -53,7 +53,7 @@ const DEMO_OWNERS: DemoOwner[] = [
     },
   },
   {
-    email: "owner2@palo.test",
+    email: "owner2@queueup.test",
     name: "Sita Gurung",
     shop: {
       name: "Lakeside Family Clinic",
@@ -68,7 +68,7 @@ const DEMO_OWNERS: DemoOwner[] = [
     },
   },
   {
-    email: "owner3@palo.test",
+    email: "owner3@queueup.test",
     name: "Bikash Tamang",
     shop: {
       name: "Everest Mobile Repair",
@@ -83,7 +83,7 @@ const DEMO_OWNERS: DemoOwner[] = [
     },
   },
   {
-    email: "owner4@palo.test",
+    email: "owner4@queueup.test",
     name: "Anita Thapa",
     shop: {
       name: "Phewa Momo House",
@@ -356,7 +356,7 @@ async function seedPastQueues(shop: typeof shops.$inferSelect, today: string) {
           // name instead of every day starting with the same customer.
           customerName: customerName(ticket.tokenNumber + dayIndex),
           // Unique per day and token, so no two demo customers share an email.
-          customerEmail: `customer-${date}-${ticket.tokenNumber}@customer.palo.test`,
+          customerEmail: `customer-${date}-${ticket.tokenNumber}@customer.queueup.test`,
           status: ticket.status,
           createdAt: shopLocalTimestamp(date, ticket.joinedAt, shop.timezone),
           verifiedAt: shopLocalTimestamp(
@@ -528,7 +528,7 @@ async function seedTodaysQueue(
         queueId: queue.id,
         tokenNumber: i + 1,
         customerName: customerName(i),
-        customerEmail: `today-${i + 1}@customer.palo.test`,
+        customerEmail: `today-${i + 1}@customer.queueup.test`,
         status: "waiting" as const,
         createdAt: new Date(joinedAt),
         verifiedAt: new Date(verifiedAt),

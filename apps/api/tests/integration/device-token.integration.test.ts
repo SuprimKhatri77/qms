@@ -15,7 +15,7 @@ import {
 } from "./support/fixtures";
 import type { Shop } from "@repo/types";
 
-// The device cap: one browser (palo_device cookie) may hold at most 2
+// The device cap: one browser (queueup_device cookie) may hold at most 2
 // active places in the same queue. Services are called directly, with the
 // token the controller would have read from the cookie.
 describe("per-device cap on joining", () => {

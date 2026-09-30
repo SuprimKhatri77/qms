@@ -173,7 +173,7 @@ export function JoinForm({ slug }: { slug: string }) {
       <p className="text-center text-xs text-ink-mute">
         We&apos;ll email you a link to confirm your spot. No account, no app.
       </p>
-      {/* Says plainly what the palo_device cookie is for, since it's set
+      {/* Says plainly what the queueup_device cookie is for, since it's set
           without asking (see apps/api/src/lib/device-token.ts). */}
       <p className="text-center text-xs text-ink-faint">
         Joining sets a one-day cookie so each phone can hold at most 2 places in

@@ -30,11 +30,11 @@ describe("readDeviceToken", () => {
   });
 
   test("reads the token when it's the only cookie", () => {
-    expect(readDeviceToken(`palo_device=${VALID_TOKEN}`)).toBe(VALID_TOKEN);
+    expect(readDeviceToken(`queueup_device=${VALID_TOKEN}`)).toBe(VALID_TOKEN);
   });
 
   test("reads the token from among other cookies", () => {
-    const header = `theme=dark; palo_device=${VALID_TOKEN}; other=1`;
+    const header = `theme=dark; queueup_device=${VALID_TOKEN}; other=1`;
     expect(readDeviceToken(header)).toBe(VALID_TOKEN);
   });
 
@@ -43,22 +43,22 @@ describe("readDeviceToken", () => {
   });
 
   test("doesn't match a cookie whose name only contains ours", () => {
-    expect(readDeviceToken(`old_palo_device=${VALID_TOKEN}`)).toBeNull();
+    expect(readDeviceToken(`old_queueup_device=${VALID_TOKEN}`)).toBeNull();
   });
 
   test("ignores a malformed pair with no '='", () => {
-    expect(readDeviceToken(`garbage; palo_device=${VALID_TOKEN}`)).toBe(
+    expect(readDeviceToken(`garbage; queueup_device=${VALID_TOKEN}`)).toBe(
       VALID_TOKEN,
     );
   });
 
   test.each([
-    ["an empty value", "palo_device="],
-    ["uppercase hex", `palo_device=${VALID_TOKEN.toUpperCase()}`],
-    ["a value that's too short", "palo_device=abc123"],
-    ["a value that's too long", `palo_device=${VALID_TOKEN}00`],
-    ["non-hex characters", `palo_device=${"z".repeat(32)}`],
-    ["a huge value", `palo_device=${"a".repeat(5000)}`],
+    ["an empty value", "queueup_device="],
+    ["uppercase hex", `queueup_device=${VALID_TOKEN.toUpperCase()}`],
+    ["a value that's too short", "queueup_device=abc123"],
+    ["a value that's too long", `queueup_device=${VALID_TOKEN}00`],
+    ["non-hex characters", `queueup_device=${"z".repeat(32)}`],
+    ["a huge value", `queueup_device=${"a".repeat(5000)}`],
   ])("rejects %s", (_label, header) => {
     expect(readDeviceToken(header)).toBeNull();
   });
@@ -66,13 +66,13 @@ describe("readDeviceToken", () => {
 
 describe("readDeviceToken with duplicate cookies", () => {
   test("a malformed copy first doesn't hide a valid one after it", () => {
-    const header = `palo_device=junk; palo_device=${VALID_TOKEN}`;
+    const header = `queueup_device=junk; queueup_device=${VALID_TOKEN}`;
     expect(readDeviceToken(header)).toBe(VALID_TOKEN);
   });
 
   test("the first valid copy wins", () => {
     const other = "fedcba9876543210fedcba9876543210";
-    const header = `palo_device=${VALID_TOKEN}; palo_device=${other}`;
+    const header = `queueup_device=${VALID_TOKEN}; queueup_device=${other}`;
     expect(readDeviceToken(header)).toBe(VALID_TOKEN);
   });
 });
