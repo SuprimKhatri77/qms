@@ -1,0 +1,11 @@
+-- Data repair, no schema change.
+--
+-- Before this fix, reopening a queue the expiry sweep had already closed
+-- left its expired_at set. The sweep only looks at queues where expired_at
+-- is null, so such a queue was never closed again: its customers stayed
+-- "waiting" past midnight and kept their device tokens.
+--
+-- An "active" queue with expired_at set can only have come from that bug.
+-- Clearing expired_at hands it back to the sweep, which closes it (and
+-- expires anyone still in line) at its closing time or the end of its day.
+UPDATE "queues" SET "expired_at" = NULL WHERE "status" = 'active' AND "expired_at" IS NOT NULL;

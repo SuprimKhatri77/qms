@@ -49,7 +49,7 @@ registry.registerPath({
   tags: ["Queue"],
   summary: "Open or close today's queue",
   description:
-    '"closed" stops new customers joining (join returns CONFLICT). Customers already in line can still be called and served. "active" reopens it. Setting the current status again is a no-op. The server also closes the queue on its own at the shop\'s closing time or the end of the shop-local day (a sweep every 5 minutes), expiring anyone still pending or waiting. Joins stay refused after closing time even if the owner reopens.',
+    '"closed" stops new customers joining (join returns CONFLICT). Customers already in line can still be called and served. "active" reopens it, except while it is past the shop\'s closing time: that returns CONFLICT (the owner changes the closing time first). Otherwise, setting the current status again is a no-op. The server also closes the queue on its own at the shop\'s closing time or the end of the shop-local day (a sweep every 5 minutes), expiring anyone still pending or waiting; a reopened queue is closed again the same way.',
   security: ownerSecurity,
   request: {
     body: {
@@ -65,6 +65,7 @@ registry.registerPath({
     401: unauthorized,
     403: forbidden,
     404: notFound,
+    409: conflict,
     500: serverError,
   },
 });

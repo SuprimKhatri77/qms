@@ -4,6 +4,8 @@ import { db } from "@/db";
 import { queues, shops, tickets } from "@/db/schema";
 import { callNext } from "@/services/queue/call-next.service";
 import { expireFinishedQueues } from "@/services/queue/expire-finished-queues.service";
+import { findOrCreateTodaysQueue } from "@/services/queue/find-or-create-queue";
+import { setQueueStatus } from "@/services/queue/set-queue-status.service";
 import { addDays, getShopLocalDate } from "@/services/queue/local-date";
 import { getPublicTicket } from "@/services/tickets/get-public-ticket.service";
 import { joinQueue } from "@/services/tickets/join-queue.service";
@@ -49,6 +51,11 @@ describe("queue expiry sweep", () => {
       .from(queues)
       .where(eq(queues.shopId, shop.id));
     return queue!;
+  }
+
+  async function shopRow() {
+    const [row] = await db.select().from(shops).where(eq(shops.id, shop.id));
+    return row;
   }
 
   async function statusOf(ticketId: string) {
@@ -186,22 +193,116 @@ describe("queue expiry sweep", () => {
     }
   });
 
-  test("a queue is only expired once, even if the owner reopens it", async () => {
+  test("running the sweep again doesn't expire a queue twice", async () => {
     await joinAndVerify(shop.slug, "First", testCustomerEmail("first"));
     await setClosingTime(shop.id, ALREADY_CLOSED);
     await expireFinishedQueues();
     const firstExpiry = (await queueOf()).expiredAt;
 
-    // The owner deliberately reopens it (what the open/close switch does).
+    const again = await expireFinishedQueues();
+
+    expect(again.expiredQueues).toBe(0);
+    expect((await queueOf()).expiredAt?.getTime()).toBe(firstExpiry?.getTime());
+  });
+
+  test("reopening is refused while it's still past closing time", async () => {
+    await joinAndVerify(shop.slug, "First", testCustomerEmail("first"));
+    await setClosingTime(shop.id, ALREADY_CLOSED);
+    await expireFinishedQueues();
+    const firstExpiry = (await queueOf()).expiredAt;
+
+    const result = await setQueueStatus(ownerId, "active");
+
+    expect(result.success).toBe(false);
+    if (result.success) return;
+    expect(result.code).toBe("CONFLICT");
+    expect(result.message).toContain("00:00");
+    // Nothing changed: still closed, still expired.
+    const queue = await queueOf();
+    expect(queue.status).toBe("closed");
+    expect(queue.expiredAt?.getTime()).toBe(firstExpiry?.getTime());
+  });
+
+  test("closing the queue is still allowed past closing time", async () => {
+    await joinAndVerify(shop.slug, "First", testCustomerEmail("first"));
+    await setClosingTime(shop.id, ALREADY_CLOSED);
+
+    const result = await setQueueStatus(ownerId, "closed");
+
+    expect(result.success).toBe(true);
+    expect((await queueOf()).status).toBe("closed");
+  });
+
+  test("a queue reopened after expiry still expires when its day ends", async () => {
+    const before = await joinAndVerify(
+      shop.slug,
+      "Before",
+      testCustomerEmail("before"),
+    );
+    await setClosingTime(shop.id, ALREADY_CLOSED);
+    await expireFinishedQueues();
+    const firstResolvedAt = (await statusOf(before)).resolvedAt;
+
+    // The owner stays open later: moves the closing time, then reopens.
+    await setClosingTime(shop.id, NOT_CLOSED_YET);
+    const reopened = await setQueueStatus(ownerId, "active");
+    expect(reopened.success).toBe(true);
+
+    const device = "fedcba9876543210fedcba9876543210";
+    const lateJoiner = await joinAndVerify(
+      shop.slug,
+      "After",
+      testCustomerEmail("after"),
+      device,
+    );
+
+    // Midnight passes.
+    const yesterday = addDays(getShopLocalDate(shop.timezone), -1);
     await db
       .update(queues)
-      .set({ status: "active" })
+      .set({ date: yesterday })
       .where(eq(queues.shopId, shop.id));
     await expireFinishedQueues();
 
+    expect((await queueOf()).status).toBe("closed");
+    expect((await statusOf(lateJoiner)).status).toBe("expired");
+    // The second sweep leaves the first one's work alone.
+    expect((await statusOf(before)).status).toBe("expired");
+    expect((await statusOf(before)).resolvedAt?.getTime()).toBe(
+      firstResolvedAt?.getTime(),
+    );
+    const [row] = await db
+      .select({ deviceToken: tickets.deviceToken })
+      .from(tickets)
+      .where(eq(tickets.id, lateJoiner));
+    expect(row?.deviceToken).toBeNull();
+  });
+
+  test("a queue reopened after expiry expires again at the new closing time", async () => {
+    await setClosingTime(shop.id, ALREADY_CLOSED);
+    await findOrCreateTodaysQueue((await shopRow())!);
+    await expireFinishedQueues();
+    const firstExpiry = (await queueOf()).expiredAt;
+    expect(firstExpiry).not.toBeNull();
+
+    await setClosingTime(shop.id, NOT_CLOSED_YET);
+    await setQueueStatus(ownerId, "active");
+    expect((await queueOf()).expiredAt).toBeNull();
+
+    const lateJoiner = await joinAndVerify(
+      shop.slug,
+      "After",
+      testCustomerEmail("after"),
+    );
+
+    // The new closing time comes round too.
+    await setClosingTime(shop.id, ALREADY_CLOSED);
+    await expireFinishedQueues();
+
     const queue = await queueOf();
-    expect(queue.status).toBe("active");
-    expect(queue.expiredAt?.getTime()).toBe(firstExpiry?.getTime());
+    expect(queue.status).toBe("closed");
+    expect(queue.expiredAt).not.toBeNull();
+    expect((await statusOf(lateJoiner)).status).toBe("expired");
   });
 
   test("past closing time, joining is refused at once, before any sweep", async () => {

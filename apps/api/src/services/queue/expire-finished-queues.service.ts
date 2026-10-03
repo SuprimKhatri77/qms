@@ -25,7 +25,8 @@ export type ExpirySweepResult = {
  * Runs on a timer (see index.ts), because it has to happen even when nobody
  * touches the shop: a customer's ticket page should stop showing a frozen
  * position. Safe to run any number of times, or from two servers at once:
- * `expired_at IS NULL` means each queue is only ever expired once.
+ * `expired_at IS NULL` means a queue is only expired once. If the owner
+ * reopens it, that clears expired_at, so the queue is closed again later.
  */
 export async function expireFinishedQueues(): Promise<ExpirySweepResult> {
   return db.transaction(async (tx) => {
