@@ -19,7 +19,10 @@ export function AdminShell({ user, defaultOpen, children }: AdminShellProps) {
     <TooltipProvider>
       <SidebarProvider defaultOpen={defaultOpen}>
         <AdminSidebar user={user} />
-        <SidebarInset>
+        {/* min-w-0 lets this flex item be narrower than its content, so a
+            wide table scrolls inside its own box instead of stretching
+            the whole page past the screen. */}
+        <SidebarInset className="min-w-0">
           <AdminHeader />
           <div className="flex-1 p-4 sm:p-6 lg:p-8">{children}</div>
         </SidebarInset>
