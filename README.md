@@ -233,6 +233,9 @@ Copy [`.env.example`](.env.example) → `.env.local` at the repo root (used by C
 | `BETTER_AUTH_URL`                   | API public URL for Better Auth                |
 | `FRONTEND_URL`                      | Web origin for CORS / emails                  |
 | `REDIS_URL`                         | Redis 7+ for rate limiting (host apps)        |
+| `EMAIL_USER` / `EMAIL_PASS`         | Gmail + app password, local email over SMTP   |
+| `RESEND_API_KEY`                    | Production email via Resend's HTTPS API       |
+| `EMAIL_FROM`                        | Sender; on the Resend-verified domain in prod |
 | `TRUST_PROXY_HOPS`                  | Proxies in front of the API (default `0`)     |
 | `SEED_PASSWORD`                     | Password for `db:seed` accounts (never prod)  |
 
