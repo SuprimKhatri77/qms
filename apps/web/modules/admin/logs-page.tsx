@@ -133,10 +133,14 @@ export function LogsPage() {
                     <TableCell className="font-mono text-xs text-ink-mute">
                       {log.source}
                     </TableCell>
-                    <TableCell>
-                      <div className="text-ink">{log.message}</div>
+                    {/* Table cells don't wrap by default, and a message or
+                        its details can be long (an error string, a stack
+                        line), so this one cell wraps. The JSON has no
+                        spaces to break at, so it may break anywhere. */}
+                    <TableCell className="min-w-64 whitespace-normal">
+                      <div className="break-words text-ink">{log.message}</div>
                       {log.meta ? (
-                        <div className="mt-1 font-mono text-xs text-ink-mute">
+                        <div className="mt-1 font-mono text-xs break-all text-ink-mute">
                           {JSON.stringify(log.meta)}
                         </div>
                       ) : null}
