@@ -5,9 +5,9 @@ import type { AdminShopListResponse, ApiErrorResponse } from "@repo/types";
 import { ErrorCode } from "@repo/types";
 import { logEvent } from "@/lib/system-logs/log-event";
 
-// A page of shops on the platform, newest first, with its owner and a
-// lifetime ticket count — enough for an admin to spot an unused or abusive
-// shop without opening each one individually.
+// A page of shops on the platform, newest first, with its owner and how
+// many customers it has served in its lifetime — enough for an admin to
+// spot an unused or abusive shop without opening each one individually.
 export async function listShops(
   page: number,
   limit: number,
@@ -27,7 +27,15 @@ export async function listShops(
         createdAt: shops.createdAt,
         ownerName: users.name,
         ownerEmail: users.email,
-        ticketCount: sql<number>`count(${tickets.id})`.mapWith(Number),
+        // Only tickets marked "done", the same rule analytics uses for
+        // "served". No-shows, cancelled, expired and unconfirmed tickets
+        // aren't customers the shop actually served. A shop with no
+        // tickets still gets one joined row (status null), which the
+        // filter doesn't count, so it shows 0.
+        servedCount:
+          sql<number>`count(*) filter (where ${tickets.status} = 'done')`.mapWith(
+            Number,
+          ),
       })
       .from(shops)
       .innerJoin(users, eq(users.id, shops.ownerId))
