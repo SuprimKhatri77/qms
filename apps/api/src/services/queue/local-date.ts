@@ -1,3 +1,5 @@
+import type { OpeningHoursStatus } from "@repo/types";
+
 // A shop's "today" is its own calendar day, not the server's (UTC) day.
 // Otherwise a queue in Kathmandu (UTC+5:45) would roll over at 5:45am local time.
 export function getShopLocalDate(timezone: string, now = new Date()): string {
@@ -40,4 +42,37 @@ export function isPastClosingTime(
     return false;
   }
   return getShopLocalTime(timezone, now) >= closingTime.slice(0, 5);
+}
+
+// True until the shop's local time reaches its opening time. No opening
+// time means customers can join from midnight.
+export function isBeforeOpeningTime(
+  openingTime: string | null,
+  timezone: string,
+  now = new Date(),
+): boolean {
+  if (!openingTime) {
+    return false;
+  }
+  return getShopLocalTime(timezone, now) < openingTime.slice(0, 5);
+}
+
+// Where the shop's local time is right now relative to its opening hours.
+// The one place this is decided: joining, the join page, /explore and the
+// owner's dashboard all ask here, so they can never disagree.
+export function getOpeningHoursStatus(
+  shop: {
+    openingTime: string | null;
+    closingTime: string | null;
+    timezone: string;
+  },
+  now = new Date(),
+): OpeningHoursStatus {
+  if (isBeforeOpeningTime(shop.openingTime, shop.timezone, now)) {
+    return "before_opening";
+  }
+  if (isPastClosingTime(shop.closingTime, shop.timezone, now)) {
+    return "after_closing";
+  }
+  return "open";
 }

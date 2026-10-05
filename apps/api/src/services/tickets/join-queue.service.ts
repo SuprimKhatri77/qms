@@ -9,8 +9,11 @@ import type {
 } from "@repo/types";
 import { ErrorCode } from "@repo/types";
 import { getShopBySlug } from "@/services/shops/get-shop-by-slug";
-import { findOrCreateTodaysQueue } from "@/services/queue/find-or-create-queue";
-import { isPastClosingTime } from "@/services/queue/local-date";
+import {
+  findOrCreateTodaysQueue,
+  findTodaysQueue,
+} from "@/services/queue/find-or-create-queue";
+import { getOpeningHoursStatus } from "@/services/queue/local-date";
 import { sendMail } from "@/lib/emails/send-email";
 import { logEvent } from "@/lib/system-logs/log-event";
 
@@ -61,10 +64,31 @@ export async function joinQueue(
       };
     }
 
-    // Past the shop's closing time nobody new can join, from that exact
-    // minute. The expiry sweep closes the queue itself a few minutes later;
+    // Outside the shop's opening hours nobody new can join, from that exact
+    // minute, whatever the owner's open/close switch says. Checked before
+    // today's queue is created, so an early visit doesn't create it. After
+    // closing, the expiry sweep closes the queue itself a few minutes later;
     // this check means no one slips in during that gap.
-    if (isPastClosingTime(shop.closingTime, shop.timezone)) {
+    const hoursStatus = getOpeningHoursStatus(shop);
+
+    if (hoursStatus === "before_opening") {
+      // Don't promise an opening time if the owner has already closed
+      // today's queue: it won't open at all today. Read-only, so an early
+      // visit still doesn't create the queue.
+      const existingQueue = await findTodaysQueue(shop);
+      const closedForToday = existingQueue?.status === "closed";
+
+      return {
+        success: false,
+        message: closedForToday
+          ? "This queue isn't accepting customers right now"
+          : // "before_opening" means an opening time is set.
+            `This queue opens at ${shop.openingTime?.slice(0, 5)}`,
+        code: ErrorCode.CONFLICT,
+      };
+    }
+
+    if (hoursStatus === "after_closing") {
       return {
         success: false,
         message: "This queue isn't accepting customers right now",

@@ -46,9 +46,11 @@ const DEMO_OWNERS: DemoOwner[] = [
       lat: 27.7154,
       lng: 85.3123,
       avgServiceMinutes: 15,
-      // No closing time, so the queue only closes at midnight. Otherwise the
+      // No opening or closing time, so customers can join at any hour.
+      // Otherwise a morning demo could find the queue not open yet, or the
       // expiry sweep could close today's demo queue (and expire its waiting
       // customers) in the middle of an evening demo.
+      openingTime: undefined,
       closingTime: undefined,
     },
   },
@@ -64,6 +66,7 @@ const DEMO_OWNERS: DemoOwner[] = [
       lat: 28.2096,
       lng: 83.9591,
       avgServiceMinutes: 12,
+      openingTime: "09:00",
       closingTime: "17:00",
     },
   },
@@ -79,6 +82,7 @@ const DEMO_OWNERS: DemoOwner[] = [
       lat: 27.7041,
       lng: 85.3107,
       avgServiceMinutes: 20,
+      openingTime: "10:00",
       closingTime: "19:00",
     },
   },
@@ -94,6 +98,7 @@ const DEMO_OWNERS: DemoOwner[] = [
       lat: 28.2027,
       lng: 83.964,
       avgServiceMinutes: 8,
+      openingTime: "11:00",
       closingTime: "21:00",
     },
   },

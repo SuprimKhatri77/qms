@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { ApiSuccessResponse } from "../base";
+import type { OpeningHoursStatus } from "../shops/shop";
 
 // Must stay in sync with `ticketStatusEnum` in apps/api/src/db/schemas/enums.ts.
 export type TicketStatus =
@@ -55,6 +56,12 @@ export type QueueSnapshot = {
   serving: QueueTicket | null;
   // Verified customers still waiting, lowest token first
   waiting: QueueTicket[];
+  // Whether it's within the shop's opening hours right now. Customers can
+  // only join while it's "open", whatever queue.status says.
+  hoursStatus: OpeningHoursStatus;
+  // The shop's hours ("HH:MM" or null), for the message that goes with it
+  openingTime: string | null;
+  closingTime: string | null;
   // Finished tickets for today
   stats: {
     done: number;

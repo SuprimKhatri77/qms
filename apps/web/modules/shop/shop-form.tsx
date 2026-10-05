@@ -73,6 +73,7 @@ export const EMPTY_SHOP_VALUES: CreateShopFormValues = {
   email: "",
   phone: "",
   avgServiceMinutes: 10,
+  openingTime: "",
   closingTime: "",
 };
 
@@ -323,32 +324,58 @@ export function ShopForm({
         }}
       </form.Field>
 
+      <form.Field name="avgServiceMinutes">
+        {(field) => {
+          const error = field.state.meta.errors[0]?.message;
+          return (
+            <FieldShell
+              id="shop-avg-minutes"
+              label="Minutes per customer"
+              error={error}
+              hint="Used to estimate each customer's wait."
+            >
+              <Input
+                id="shop-avg-minutes"
+                name="avgServiceMinutes"
+                type="number"
+                min={1}
+                max={180}
+                required
+                value={numberToInputValue(field.state.value)}
+                onBlur={field.handleBlur}
+                onChange={(event) =>
+                  field.handleChange(event.target.valueAsNumber)
+                }
+                aria-invalid={error ? true : undefined}
+                aria-describedby={error ? "shop-avg-minutes-error" : undefined}
+                className={inputClassName}
+              />
+            </FieldShell>
+          );
+        }}
+      </form.Field>
+
       <div className="grid gap-5 sm:grid-cols-2">
-        <form.Field name="avgServiceMinutes">
+        <form.Field name="openingTime">
           {(field) => {
             const error = field.state.meta.errors[0]?.message;
             return (
               <FieldShell
-                id="shop-avg-minutes"
-                label="Minutes per customer"
+                id="shop-opening-time"
+                label="Opens at (optional)"
                 error={error}
-                hint="Used to estimate each customer's wait."
+                hint="Customers can't join before this time. Leave it empty to open from midnight."
               >
                 <Input
-                  id="shop-avg-minutes"
-                  name="avgServiceMinutes"
-                  type="number"
-                  min={1}
-                  max={180}
-                  required
-                  value={numberToInputValue(field.state.value)}
+                  id="shop-opening-time"
+                  name="openingTime"
+                  type="time"
+                  value={field.state.value ?? ""}
                   onBlur={field.handleBlur}
-                  onChange={(event) =>
-                    field.handleChange(event.target.valueAsNumber)
-                  }
+                  onChange={(event) => field.handleChange(event.target.value)}
                   aria-invalid={error ? true : undefined}
                   aria-describedby={
-                    error ? "shop-avg-minutes-error" : undefined
+                    error ? "shop-opening-time-error" : undefined
                   }
                   className={inputClassName}
                 />
@@ -357,7 +384,13 @@ export function ShopForm({
           }}
         </form.Field>
 
-        <form.Field name="closingTime">
+        {/* The "after the opening time" error is shown on this field, so
+            changing the opening time re-checks it too: fixing the opening
+            time clears the error without having to submit again. */}
+        <form.Field
+          name="closingTime"
+          validators={{ onChangeListenTo: ["openingTime"] }}
+        >
           {(field) => {
             const error = field.state.meta.errors[0]?.message;
             return (

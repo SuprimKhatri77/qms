@@ -50,11 +50,24 @@ export function QueueBoard() {
     );
   }
 
-  const { queue, serving, waiting, stats } = data.data;
+  const {
+    queue,
+    serving,
+    waiting,
+    stats,
+    hoursStatus,
+    openingTime,
+    closingTime,
+  } = data.data;
 
   return (
     <div className="space-y-6">
-      <QueueStatusBar queue={queue} />
+      <QueueStatusBar
+        queue={queue}
+        hoursStatus={hoursStatus}
+        openingTime={openingTime}
+        closingTime={closingTime}
+      />
 
       <NowServingCard
         serving={serving}

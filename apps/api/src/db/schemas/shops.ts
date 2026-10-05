@@ -42,6 +42,8 @@ export const shops = pgTable(
 
     // queue behavior config, owner-controlled
     avgServiceMinutes: integer("avg_service_minutes").notNull().default(10),
+    // Shop-local opening time. Null means customers can join from midnight.
+    openingTime: time("opening_time"),
     // Shop-local closing time. Null means the queue only closes at midnight.
     closingTime: time("closing_time"),
 

@@ -30,3 +30,22 @@ export async function findOrCreateTodaysQueue(shop: typeof shops.$inferSelect) {
 
   return queue;
 }
+
+// Today's queue for the shop if it already exists, without creating it: for
+// read-only places like the public join page, where a page view shouldn't
+// write to the database. No row means nobody has joined or opened the
+// dashboard today, and a new queue starts open.
+export async function findTodaysQueue(shop: typeof shops.$inferSelect) {
+  const [queue] = await db
+    .select()
+    .from(queues)
+    .where(
+      and(
+        eq(queues.shopId, shop.id),
+        eq(queues.date, getShopLocalDate(shop.timezone)),
+      ),
+    )
+    .limit(1);
+
+  return queue;
+}

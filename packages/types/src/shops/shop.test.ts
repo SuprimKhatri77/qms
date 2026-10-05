@@ -124,4 +124,61 @@ describe("createShopSchema", () => {
       ).toBe(false);
     }
   });
+
+  test("accepts an opening time like 09:00, on its own or before the closing time", () => {
+    const openingOnly = createShopSchema.safeParse({
+      ...validShop,
+      openingTime: "09:00",
+    });
+    expect(openingOnly.success).toBe(true);
+    if (!openingOnly.success) return;
+    expect(openingOnly.data.openingTime).toBe("09:00");
+
+    const both = createShopSchema.safeParse({
+      ...validShop,
+      openingTime: "09:00",
+      closingTime: "17:00",
+    });
+    expect(both.success).toBe(true);
+  });
+
+  test("an empty opening time means none (open from midnight)", () => {
+    const result = createShopSchema.safeParse({
+      ...validShop,
+      openingTime: "",
+      closingTime: "17:00",
+    });
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.data.openingTime).toBeUndefined();
+  });
+
+  test("rejects opening times that aren't HH:MM", () => {
+    for (const openingTime of ["9am", "24:00", "09:60", "9:00"]) {
+      expect(
+        createShopSchema.safeParse({ ...validShop, openingTime }).success,
+      ).toBe(false);
+    }
+  });
+
+  test("the closing time must be after the opening time", () => {
+    for (const [openingTime, closingTime] of [
+      ["17:00", "09:00"],
+      ["09:00", "09:00"],
+      ["09:00", "00:00"],
+    ]) {
+      const result = createShopSchema.safeParse({
+        ...validShop,
+        openingTime,
+        closingTime,
+      });
+      expect(result.success).toBe(false);
+      if (result.success) continue;
+      // Shown under the closing-time field.
+      expect(result.error.issues[0]?.path).toEqual(["closingTime"]);
+      expect(result.error.issues[0]?.message).toBe(
+        "Closing time must be after the opening time",
+      );
+    }
+  });
 });

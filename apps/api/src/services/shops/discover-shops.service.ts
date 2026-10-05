@@ -9,6 +9,7 @@ import type {
 import { ErrorCode } from "@repo/types";
 import { boundingBox, EARTH_RADIUS_KM } from "@/lib/geo";
 import { logEvent } from "@/lib/system-logs/log-event";
+import { getOpeningHoursStatus } from "@/services/queue/local-date";
 
 // Enough for one screen of results; the filters narrow it further.
 const MAX_RESULTS = 50;
@@ -100,6 +101,9 @@ export async function discoverShops(
         distanceKm: distanceKm ?? sql<null>`null`,
         queueOpen: queueOpenToday,
         waitingCount: waitingCountToday,
+        timezone: shops.timezone,
+        openingTime: shops.openingTime,
+        closingTime: shops.closingTime,
       })
       .from(shops)
       .where(and(...conditions))
@@ -119,7 +123,18 @@ export async function discoverShops(
       success: true,
       message: "Shops retrieved successfully",
       data: {
-        shops: rows,
+        // Opening hours are worked out in JS with the same helper joinQueue
+        // uses, so the card can't say "Open" when joining would be refused.
+        // The timezone and closing time are only needed for that.
+        shops: rows.map(({ timezone, closingTime, ...row }) => ({
+          ...row,
+          openingTime: row.openingTime ? row.openingTime.slice(0, 5) : null,
+          hoursStatus: getOpeningHoursStatus({
+            openingTime: row.openingTime,
+            closingTime,
+            timezone,
+          }),
+        })),
         cities: cityRows.map((row) => row.city),
       },
     };

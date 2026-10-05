@@ -1,11 +1,12 @@
 import { and, asc, count, eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
-import { queues, tickets } from "@/db/schema";
+import { queues, shops, tickets } from "@/db/schema";
 import type {
   QueueSnapshot,
   QueueSnapshotResponse,
   QueueTicket,
 } from "@repo/types";
+import { getOpeningHoursStatus } from "./local-date";
 
 export function toQueueTicket(row: typeof tickets.$inferSelect): QueueTicket {
   return {
@@ -26,15 +27,19 @@ export function toQueueTicket(row: typeof tickets.$inferSelect): QueueTicket {
 export async function buildQueueSnapshot(
   queueId: string,
 ): Promise<QueueSnapshot> {
-  const [queue] = await db
-    .select()
+  // The queue's shop comes along for its opening hours.
+  const [row] = await db
+    .select({ queue: queues, shop: shops })
     .from(queues)
+    .innerJoin(shops, eq(shops.id, queues.shopId))
     .where(eq(queues.id, queueId))
     .limit(1);
 
-  if (!queue) {
+  if (!row) {
     throw new Error(`Queue ${queueId} not found`);
   }
+
+  const { queue, shop } = row;
 
   const activeTickets = await db
     .select()
@@ -74,6 +79,11 @@ export async function buildQueueSnapshot(
     waiting: activeTickets
       .filter((ticket) => ticket.status === "waiting")
       .map(toQueueTicket),
+    // The status and the times it's based on come from the same read, so
+    // the dashboard can never show one without the other.
+    hoursStatus: getOpeningHoursStatus(shop),
+    openingTime: shop.openingTime ? shop.openingTime.slice(0, 5) : null,
+    closingTime: shop.closingTime ? shop.closingTime.slice(0, 5) : null,
     stats: {
       done: totalFor("done"),
       noShow: totalFor("no_show"),

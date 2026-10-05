@@ -1,4 +1,4 @@
-import type { Shop } from "@repo/types";
+import type { OpeningHoursStatus, Shop } from "@repo/types";
 import { SHOP_CATEGORY_LABELS } from "@repo/types";
 import { Logo } from "@/modules/landing/logo";
 import { JoinForm } from "./join-form";
@@ -7,12 +7,15 @@ type JoinPageProps = {
   shop: Shop;
   // False once the owner has closed today's queue to new customers
   queueOpen: boolean;
+  // Whether it's within the shop's opening hours right now
+  hoursStatus: OpeningHoursStatus;
 };
 
 // What goes in the card: the form, or the reason it can't be used. A
-// suspended shop is checked first, because an admin's decision outranks
-// the owner's open/closed switch.
-function JoinCardContent({ shop, queueOpen }: JoinPageProps) {
+// suspended shop comes first (an admin's decision outranks everything),
+// then the owner's switch: a queue closed before opening time won't open at
+// all today, so it mustn't say "opens at". Then the opening hours.
+function JoinCardContent({ shop, queueOpen, hoursStatus }: JoinPageProps) {
   if (shop.status === "suspended") {
     return (
       <p className="text-center text-sm text-ink-mute">
@@ -29,10 +32,26 @@ function JoinCardContent({ shop, queueOpen }: JoinPageProps) {
     );
   }
 
+  if (hoursStatus === "before_opening") {
+    return (
+      <p className="text-center text-sm text-ink-mute">
+        This queue opens at {shop.openingTime}. Check back then.
+      </p>
+    );
+  }
+
+  if (hoursStatus === "after_closing") {
+    return (
+      <p className="text-center text-sm text-ink-mute">
+        This queue has closed for today. Check back tomorrow.
+      </p>
+    );
+  }
+
   return <JoinForm slug={shop.slug} />;
 }
 
-export function JoinPage({ shop, queueOpen }: JoinPageProps) {
+export function JoinPage({ shop, queueOpen, hoursStatus }: JoinPageProps) {
   const location = [shop.area, shop.city].filter(Boolean).join(", ");
 
   return (
@@ -50,7 +69,11 @@ export function JoinPage({ shop, queueOpen }: JoinPageProps) {
         </div>
 
         <div className="rounded-none border border-hairline bg-canvas p-8 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
-          <JoinCardContent shop={shop} queueOpen={queueOpen} />
+          <JoinCardContent
+            shop={shop}
+            queueOpen={queueOpen}
+            hoursStatus={hoursStatus}
+          />
         </div>
       </div>
     </div>

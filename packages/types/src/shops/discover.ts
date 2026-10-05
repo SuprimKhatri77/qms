@@ -1,6 +1,10 @@
 import { z } from "zod";
 import type { ApiSuccessResponse } from "../base";
-import { shopCategorySchema, type ShopCategory } from "./shop";
+import {
+  shopCategorySchema,
+  type OpeningHoursStatus,
+  type ShopCategory,
+} from "./shop";
 
 // Query-string values arrive as text, and an empty one ("?city=") means
 // "not given" rather than "the empty string" (or, for numbers, 0).
@@ -70,6 +74,10 @@ export type DiscoveredShop = {
   // expiry sweep) closed it, and how many verified customers are waiting.
   queueOpen: boolean;
   waitingCount: number;
+  // Whether it's within the shop's hours right now, and when it opens, so
+  // the card can say "Opens at 09:00".
+  hoursStatus: OpeningHoursStatus;
+  openingTime: string | null;
 };
 
 export type DiscoverShopsResponse = ApiSuccessResponse<{

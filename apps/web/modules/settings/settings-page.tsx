@@ -28,6 +28,7 @@ export function SettingsPage({ user }: { user: User }) {
     lat: shop.lat ?? undefined,
     lng: shop.lng ?? undefined,
     avgServiceMinutes: shop.avgServiceMinutes,
+    openingTime: shop.openingTime ?? "",
     closingTime: shop.closingTime ?? "",
   };
 
