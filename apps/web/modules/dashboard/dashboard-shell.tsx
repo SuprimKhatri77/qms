@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ShopProvider } from "@/modules/shop/shop-provider";
 import { AppSidebar } from "./app-sidebar";
 import { DashboardHeader } from "./dashboard-header";
+import { SuspendedShopBanner } from "./suspended-shop-banner";
 
 type DashboardShellProps = {
   shop: Shop;
@@ -33,6 +34,7 @@ export function DashboardShell({
               the whole page past the screen. */}
           <SidebarInset className="min-w-0">
             <DashboardHeader />
+            <SuspendedShopBanner />
             <div className="flex-1 p-4 sm:p-6 lg:p-8">{children}</div>
           </SidebarInset>
         </SidebarProvider>
