@@ -111,7 +111,7 @@ export function ShopsPage() {
                   <TableHead>Shop</TableHead>
                   <TableHead>Owner</TableHead>
                   <TableHead>City</TableHead>
-                  <TableHead className="text-right">Tickets</TableHead>
+                  <TableHead className="text-right">Served</TableHead>
                   <TableHead>Created</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Action</TableHead>
@@ -138,7 +138,7 @@ export function ShopsPage() {
                       </TableCell>
                       <TableCell>{shop.city}</TableCell>
                       <TableCell className="text-right tabular-nums">
-                        {shop.ticketCount}
+                        {shop.servedCount}
                       </TableCell>
                       <TableCell>{formatDateTime(shop.createdAt)}</TableCell>
                       <TableCell>

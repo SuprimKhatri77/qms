@@ -165,7 +165,9 @@ export const adminShopSummarySchema = z.object({
   status: z.enum(["active", "suspended"]),
   ownerName: z.string(),
   ownerEmail: z.string(),
-  ticketCount: z.number(),
+  servedCount: z.number().openapi({
+    description: 'Lifetime number of tickets marked "done".',
+  }),
   createdAt: z.iso.datetime(),
 });
 

@@ -14,9 +14,10 @@ export type AdminShopSummary = {
   status: ShopStatus;
   ownerName: string;
   ownerEmail: string;
-  // Lifetime ticket count, not scoped to any date range — just a quick
-  // "is this shop actually being used" signal.
-  ticketCount: number;
+  // Lifetime number of customers served (tickets marked "done"), not scoped
+  // to any date range — just a quick "is this shop actually being used"
+  // signal.
+  servedCount: number;
   createdAt: string;
 };
 
