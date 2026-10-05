@@ -4,9 +4,22 @@ import { SHOP_CATEGORY_LABELS } from "@repo/types";
 import { Button } from "@/components/ui/button";
 import { formatDistance } from "@/lib/format";
 
-// "Open · 3 waiting" or "Closed today".
+// Whether a customer can join right now: within the shop's hours and not
+// closed by the owner (the same two checks joining makes).
+function canJoinNow(shop: DiscoveredShop): boolean {
+  return shop.hoursStatus === "open" && shop.queueOpen;
+}
+
+// "Open · 3 waiting", "Opens at 09:00" or "Closed today". The owner's
+// Close comes first: a queue closed before opening time won't open today.
 function queueSummary(shop: DiscoveredShop): string {
   if (!shop.queueOpen) {
+    return "Closed today";
+  }
+  if (shop.hoursStatus === "before_opening") {
+    return `Opens at ${shop.openingTime}`;
+  }
+  if (!canJoinNow(shop)) {
     return "Closed today";
   }
   if (shop.waitingCount === 0) {
@@ -17,6 +30,7 @@ function queueSummary(shop: DiscoveredShop): string {
 
 export function ShopResultCard({ shop }: { shop: DiscoveredShop }) {
   const location = [shop.area, shop.city].filter(Boolean).join(", ");
+  const joinable = canJoinNow(shop);
 
   return (
     <article className="flex flex-col border border-hairline bg-canvas p-5">
@@ -31,19 +45,17 @@ export function ShopResultCard({ shop }: { shop: DiscoveredShop }) {
       <p className="mt-1 text-sm text-ink-mute">
         {SHOP_CATEGORY_LABELS[shop.category]} · {location}
       </p>
-      <p
-        className={`mt-3 text-sm ${shop.queueOpen ? "text-ink" : "text-ink-mute"}`}
-      >
+      <p className={`mt-3 text-sm ${joinable ? "text-ink" : "text-ink-mute"}`}>
         {queueSummary(shop)}
       </p>
       <Button
         className="mt-4 self-start"
         size="sm"
-        variant={shop.queueOpen ? "default" : "outline"}
+        variant={joinable ? "default" : "outline"}
         nativeButton={false}
         render={<Link href={`/s/${shop.slug}`} />}
       >
-        {shop.queueOpen ? "Join the queue" : "View shop"}
+        {joinable ? "Join the queue" : "View shop"}
       </Button>
     </article>
   );

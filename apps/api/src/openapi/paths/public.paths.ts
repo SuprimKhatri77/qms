@@ -8,6 +8,7 @@ import { registry } from "../registry";
 import {
   apiSuccessSchema,
   discoveredShopSchema,
+  hoursStatusSchema,
   publicTicketSchema,
   shopSchema,
 } from "../schemas";
@@ -62,11 +63,15 @@ registry.registerPath({
   responses: {
     200: {
       description:
-        "The shop, and whether today's queue is open to new customers.",
+        "The shop, whether the owner has today's queue open, and whether it's within the shop's opening hours. Customers can join only when both allow it.",
       content: {
         "application/json": {
           schema: apiSuccessSchema(
-            z.object({ shop: shopSchema, queueOpen: z.boolean() }),
+            z.object({
+              shop: shopSchema,
+              queueOpen: z.boolean(),
+              hoursStatus: hoursStatusSchema,
+            }),
           ),
         },
       },
@@ -82,7 +87,7 @@ registry.registerPath({
   tags: ["Public"],
   summary: "Join a shop's queue",
   description:
-    "Creates a pending ticket and emails a verification link. Fails with CONFLICT if the shop is suspended, it's past the shop's closing time, today's queue is closed, or this device already holds 2 active tickets in this queue, and DUPLICATE_ENTRY if this email already has an active ticket today. An unconfirmed ticket whose link has run out doesn't count as active: it's marked expired first, so the customer can join again. The device is identified by the queueup_device cookie (HttpOnly, SameSite=Lax, Secure in production, Path=/api/v1/public, one day). Every response from this endpoint that gets past validation and rate limiting sets it with Set-Cookie, minting a new one if the request had none, so a first visit is never capped. It's a soft signal only: clearing cookies, or any client that doesn't send cookies back, is never capped. Device tokens are wiped from tickets once their queue is finished.",
+    "Creates a pending ticket and emails a verification link. Fails with CONFLICT if the shop is suspended, it's before the shop's opening time or past its closing time, today's queue is closed, or this device already holds 2 active tickets in this queue, and DUPLICATE_ENTRY if this email already has an active ticket today. An unconfirmed ticket whose link has run out doesn't count as active: it's marked expired first, so the customer can join again. The device is identified by the queueup_device cookie (HttpOnly, SameSite=Lax, Secure in production, Path=/api/v1/public, one day). Every response from this endpoint that gets past validation and rate limiting sets it with Set-Cookie, minting a new one if the request had none, so a first visit is never capped. It's a soft signal only: clearing cookies, or any client that doesn't send cookies back, is never capped. Device tokens are wiped from tickets once their queue is finished.",
   request: {
     params: slugParam,
     body: { content: { "application/json": { schema: joinQueueSchema } } },

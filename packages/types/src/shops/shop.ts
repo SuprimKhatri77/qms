@@ -43,6 +43,22 @@ function optionalTrimmedString(maxLength: number, fieldLabel: string) {
     .optional();
 }
 
+// Shop-local time of day as "HH:MM" (24-hour), used for the opening and
+// closing times. Optional: an empty input means "not set".
+function optionalTimeOfDay() {
+  return z
+    .string()
+    .trim()
+    .refine(
+      (value) => value === "" || /^([01]\d|2[0-3]):[0-5]\d$/.test(value),
+      {
+        error: "Enter a time like 19:00",
+      },
+    )
+    .transform((value) => (value === "" ? undefined : value))
+    .optional();
+}
+
 export const createShopSchema = z
   .object({
     name: z
@@ -95,25 +111,30 @@ export const createShopSchema = z
       .int({ error: "Average service time must be a whole number" })
       .min(1, { error: "Average service time must be at least 1 minute" })
       .max(180, { error: "Average service time must be at most 180 minutes" }),
-    // Shop-local time ("HH:MM", 24-hour) after which nobody new can join and
-    // the day's queue closes. Optional: without one the queue closes at
-    // midnight (see expire-finished-queues.service.ts).
-    closingTime: z
-      .string()
-      .trim()
-      .refine(
-        (value) => value === "" || /^([01]\d|2[0-3]):[0-5]\d$/.test(value),
-        {
-          error: "Enter a time like 19:00",
-        },
-      )
-      .transform((value) => (value === "" ? undefined : value))
-      .optional(),
+    // Shop-local time before which nobody can join. Optional: without one
+    // customers can join from midnight.
+    openingTime: optionalTimeOfDay(),
+    // Shop-local time after which nobody new can join and the day's queue
+    // closes. Optional: without one the queue closes at midnight (see
+    // expire-finished-queues.service.ts).
+    closingTime: optionalTimeOfDay(),
   })
   .refine((data) => (data.lat === undefined) === (data.lng === undefined), {
     error: "Pick a location on the map, or leave it blank",
     path: ["lat"],
-  });
+  })
+  // A queue is one shop-local day, so the hours can't run past midnight.
+  // "HH:MM" strings compare correctly as text ("09:00" < "17:00").
+  .refine(
+    (data) =>
+      data.openingTime === undefined ||
+      data.closingTime === undefined ||
+      data.openingTime < data.closingTime,
+    {
+      error: "Closing time must be after the opening time",
+      path: ["closingTime"],
+    },
+  );
 
 export type CreateShopRequest = z.infer<typeof createShopSchema>;
 
@@ -150,6 +171,8 @@ export type Shop = {
   lng: number | null;
   timezone: string;
   avgServiceMinutes: number;
+  // "HH:MM" in the shop's timezone, or null to open from midnight.
+  openingTime: string | null;
   // "HH:MM" in the shop's timezone, or null to close at midnight.
   closingTime: string | null;
   createdAt: string;
@@ -163,10 +186,21 @@ export type UpdateShopResponse = ApiSuccessResponse<{ shop: Shop }>;
 // `shop` is null while the owner hasn't finished onboarding yet.
 export type GetMyShopResponse = ApiSuccessResponse<{ shop: Shop | null }>;
 
+// Where the shop's local time is right now relative to its opening hours.
+// Customers can only join while it's "open" (see joinQueue).
+export const OPENING_HOURS_STATUSES = [
+  "before_opening",
+  "open",
+  "after_closing",
+] as const;
+export type OpeningHoursStatus = (typeof OPENING_HOURS_STATUSES)[number];
+
 // What the public join page ("/s/<slug>") loads. `queueOpen` is false once
-// the owner has closed today's queue, so the page can say so up front
+// the owner has closed today's queue, and `hoursStatus` says whether it's
+// within the shop's hours, so the page can say up front why nobody can join
 // instead of the customer only finding out when they submit the form.
 export type GetPublicShopResponse = ApiSuccessResponse<{
   shop: Shop;
   queueOpen: boolean;
+  hoursStatus: OpeningHoursStatus;
 }>;

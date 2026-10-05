@@ -1,5 +1,9 @@
 import { z } from "zod";
-import { paginationMetaSchema, SHOP_CATEGORIES } from "@repo/types";
+import {
+  OPENING_HOURS_STATUSES,
+  paginationMetaSchema,
+  SHOP_CATEGORIES,
+} from "@repo/types";
 
 // Response bodies aren't validated with zod at runtime (only request bodies
 // and query strings are) — the types in @repo/types are plain TypeScript.
@@ -47,11 +51,20 @@ export const shopSchema = z.object({
   lng: z.number().nullable(),
   timezone: z.string(),
   avgServiceMinutes: z.number(),
+  openingTime: z.string().nullable().openapi({
+    description:
+      'Shop-local "HH:MM"; null means customers can join from midnight.',
+  }),
   closingTime: z.string().nullable().openapi({
     description: 'Shop-local "HH:MM"; null means the queue closes at midnight.',
   }),
   createdAt: z.iso.datetime(),
   updatedAt: z.iso.datetime(),
+});
+
+export const hoursStatusSchema = z.enum(OPENING_HOURS_STATUSES).openapi({
+  description:
+    "Where the shop's local time is now relative to its opening hours. Customers can only join while it is \"open\", whatever the queue's own status says.",
 });
 
 const ticketStatusSchema = z
@@ -91,6 +104,9 @@ export const queueSnapshotSchema = z.object({
   queue: shopQueueSchema,
   serving: queueTicketSchema.nullable(),
   waiting: z.array(queueTicketSchema),
+  hoursStatus: hoursStatusSchema,
+  openingTime: z.string().nullable(),
+  closingTime: z.string().nullable(),
   stats: z.object({
     done: z.number(),
     noShow: z.number(),
@@ -201,10 +217,15 @@ export const discoveredShopSchema = z.object({
   distanceKm: z.number().nullable().openapi({
     description: "Distance from the searched location; null without one.",
   }),
-  queueOpen: z
-    .boolean()
-    .openapi({ description: "Whether today's queue is taking new customers." }),
+  queueOpen: z.boolean().openapi({
+    description:
+      'False when the owner (or the expiry sweep) has closed today\'s queue. Customers can join only when this is true and hoursStatus is "open".',
+  }),
   waitingCount: z
     .number()
     .openapi({ description: "Verified customers waiting in today's queue." }),
+  hoursStatus: hoursStatusSchema,
+  openingTime: z.string().nullable().openapi({
+    description: 'Shop-local "HH:MM", or null when it opens at midnight.',
+  }),
 });

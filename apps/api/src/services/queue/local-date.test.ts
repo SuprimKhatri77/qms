@@ -2,7 +2,9 @@ import { describe, expect, test } from "bun:test";
 import {
   addDays,
   getShopLocalDate,
+  getOpeningHoursStatus,
   getShopLocalTime,
+  isBeforeOpeningTime,
   isPastClosingTime,
 } from "./local-date";
 
@@ -65,5 +67,66 @@ describe("isPastClosingTime", () => {
     // 13:20 UTC: past 13:00 in UTC, but in Kathmandu it's already 19:05.
     expect(isPastClosingTime("20:00", "UTC", AT_1905_KATHMANDU)).toBe(false);
     expect(isPastClosingTime("13:00", "UTC", AT_1905_KATHMANDU)).toBe(true);
+  });
+});
+
+describe("isBeforeOpeningTime", () => {
+  test("no opening time means open from midnight", () => {
+    expect(isBeforeOpeningTime(null, "Asia/Kathmandu", AT_1905_KATHMANDU)).toBe(
+      false,
+    );
+  });
+
+  test("is true until the opening minute, and false from it", () => {
+    expect(
+      isBeforeOpeningTime("19:06", "Asia/Kathmandu", AT_1905_KATHMANDU),
+    ).toBe(true);
+    expect(
+      isBeforeOpeningTime("19:05", "Asia/Kathmandu", AT_1905_KATHMANDU),
+    ).toBe(false);
+    expect(
+      isBeforeOpeningTime("09:00", "Asia/Kathmandu", AT_1905_KATHMANDU),
+    ).toBe(false);
+  });
+
+  test("accepts Postgres's HH:MM:SS form", () => {
+    expect(
+      isBeforeOpeningTime("20:00:00", "Asia/Kathmandu", AT_1905_KATHMANDU),
+    ).toBe(true);
+  });
+
+  test("judges by the shop's timezone, not the server's", () => {
+    // 13:20 UTC is 19:05 in Kathmandu.
+    expect(isBeforeOpeningTime("14:00", "UTC", AT_1905_KATHMANDU)).toBe(true);
+    expect(
+      isBeforeOpeningTime("14:00", "Asia/Kathmandu", AT_1905_KATHMANDU),
+    ).toBe(false);
+  });
+});
+
+describe("getOpeningHoursStatus", () => {
+  const kathmandu = (openingTime: string | null, closingTime: string | null) =>
+    getOpeningHoursStatus(
+      { openingTime, closingTime, timezone: "Asia/Kathmandu" },
+      AT_1905_KATHMANDU,
+    );
+
+  test("with no hours set it's always open", () => {
+    expect(kathmandu(null, null)).toBe("open");
+  });
+
+  test("inside the hours it's open", () => {
+    expect(kathmandu("09:00", "21:00")).toBe("open");
+    expect(kathmandu("19:05", "19:06")).toBe("open");
+  });
+
+  test("before the opening time it's before_opening", () => {
+    expect(kathmandu("20:00", "22:00")).toBe("before_opening");
+    expect(kathmandu("20:00", null)).toBe("before_opening");
+  });
+
+  test("from the closing time it's after_closing", () => {
+    expect(kathmandu("09:00", "19:05")).toBe("after_closing");
+    expect(kathmandu(null, "17:00")).toBe("after_closing");
   });
 });

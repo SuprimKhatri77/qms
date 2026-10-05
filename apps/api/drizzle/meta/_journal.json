@@ -50,6 +50,13 @@
       "when": 1791041205020,
       "tag": "0006_repair_reopened_queues",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791218601575,
+      "tag": "0007_add_shop_opening_time",
+      "breakpoints": true
     }
   ]
 }

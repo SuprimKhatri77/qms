@@ -16,7 +16,9 @@ export async function generateMetadata({
 
 export default async function Page({ params }: PageProps) {
   const { shopSlug } = await params;
-  const { shop, queueOpen } = await getPublicShopFromApi(shopSlug);
+  const { shop, queueOpen, hoursStatus } = await getPublicShopFromApi(shopSlug);
 
-  return <JoinPage shop={shop} queueOpen={queueOpen} />;
+  return (
+    <JoinPage shop={shop} queueOpen={queueOpen} hoursStatus={hoursStatus} />
+  );
 }

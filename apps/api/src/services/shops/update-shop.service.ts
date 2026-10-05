@@ -40,6 +40,7 @@ export async function updateShop(
         lat: data.lat ?? null,
         lng: data.lng ?? null,
         avgServiceMinutes: data.avgServiceMinutes,
+        openingTime: data.openingTime ?? null,
         closingTime: data.closingTime ?? null,
       })
       .where(eq(shops.id, shop.id))

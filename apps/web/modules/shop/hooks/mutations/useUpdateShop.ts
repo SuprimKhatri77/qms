@@ -7,6 +7,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { AxiosError } from "axios";
 import { toast } from "sonner";
 import { updateShop } from "../../api/shop";
+import { SHOP_QUEUE_KEY } from "@/modules/queue/hooks/queries/useShopQueue";
 import { MY_SHOP_KEY } from "../queries/useMyShop";
 
 export const useUpdateShop = () => {
@@ -23,6 +24,9 @@ export const useUpdateShop = () => {
       // Put the saved shop straight into the cache: the sidebar and every
       // page showing the shop update without another request.
       queryClient.setQueryData(MY_SHOP_KEY, result.data.shop);
+      // The live queue shows the opening hours too, so fetch it again rather
+      // than wait for its next poll.
+      void queryClient.invalidateQueries({ queryKey: SHOP_QUEUE_KEY });
     },
     onError: (error) => {
       toast.error(

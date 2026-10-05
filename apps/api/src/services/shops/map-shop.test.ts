@@ -20,6 +20,7 @@ const shopRow = {
   email: null,
   phone: null,
   avgServiceMinutes: 15,
+  openingTime: "09:30:00",
   closingTime: "19:00:00",
   createdAt: new Date("2026-09-01T00:00:00.000Z"),
   updatedAt: new Date("2026-09-02T00:00:00.000Z"),
@@ -38,7 +39,18 @@ describe("toApiShop", () => {
     expect(shop.timezone).toBe(shopRow.timezone);
     expect(shop.avgServiceMinutes).toBe(shopRow.avgServiceMinutes);
     // Postgres's "HH:MM:SS" is trimmed to "HH:MM".
+    expect(shop.openingTime).toBe("09:30");
     expect(shop.closingTime).toBe("19:00");
+  });
+
+  test("keeps unset opening and closing times as null", () => {
+    const shop = toApiShop({
+      ...shopRow,
+      openingTime: null,
+      closingTime: null,
+    });
+    expect(shop.openingTime).toBeNull();
+    expect(shop.closingTime).toBeNull();
   });
 
   test("leaves ownerId out of the result", () => {
